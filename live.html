@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bot de papel — Datos en vivo</title>
+<style>
+  body { background:#0b0f14; color:#d7dee8; font-family:Arial,Helvetica,sans-serif; margin:0; padding:20px; }
+  h1 { color:#e8b64c; margin:0 0 4px; font-size:26px; }
+  h2 { color:#7fd4a8; border-bottom:1px solid #243447; padding-bottom:4px; }
+  .sub { color:#8b98a9; margin-bottom:18px; }
+  .demo { background:#3a2b00; border:1px solid #e8b64c; color:#ffd97a; padding:10px 14px; border-radius:8px; margin-bottom:18px; font-weight:bold; }
+  .cards { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
+  .card { background:#131c28; border:1px solid #243447; border-radius:10px; padding:14px 18px; min-width:160px; }
+  .card .label { color:#8b98a9; font-size:12px; text-transform:uppercase; }
+  .card .value { font-size:26px; font-weight:bold; margin-top:4px; }
+  .win { color:#4ade80; } .loss { color:#f87171; }
+  table { width:100%; border-collapse:collapse; margin-bottom:24px; font-size:14px; }
+  th, td { border-bottom:1px solid #243447; padding:7px 8px; text-align:left; vertical-align:top; }
+  th { color:#8b98a9; text-transform:uppercase; font-size:12px; }
+  .note { color:#8b98a9; font-size:13px; }
+  .status { font-size:13px; margin-bottom:16px; }
+  .status .ok { color:#4ade80; } .status .bad { color:#f87171; }
+  footer { color:#8b98a9; font-size:12px; border-top:1px solid #243447; padding-top:10px; }
+  .chip { display:inline-block; border:1px dotted #8b98a9; border-radius:4px; padding:1px 6px; font-size:12px; }
+  .chip-open { color:#4ade80; border-color:#4ade80; }
+  .chip-reject { color:#f87171; border-color:#f87171; }
+  .chip-close { color:#d7dee8; }
+</style>
+</head>
+<body>
+<h1>BOT DE PAPEL — DATOS EN VIVO</h1>
+<div class="sub">Tablero ligero: lee los datos del bot cada 30 segundos. Complementa al tablero principal.</div>
+<div class="demo">DINERO DEMO (falso) — $0 real. Ninguna operación mueve dinero de verdad.</div>
+<div class="status" id="status">Cargando datos…</div>
+
+<h2>Saldo</h2>
+<div class="cards" id="balance-cards"></div>
+
+<h2>Carriles (triaje)</h2>
+<div class="cards" id="lane-cards"></div>
+
+<h2>Operaciones</h2>
+<table id="trades-table">
+  <thead><tr><th>Cierre</th><th>Token</th><th>Entrada</th><th>Salida</th><th>Tamaño</th><th>Ganancia/pérdida</th><th>Motivo</th></tr></thead>
+  <tbody><tr><td colspan="7">Cargando…</td></tr></tbody>
+</table>
+
+<h2>Decisiones recientes (log)</h2>
+<table id="decisions-table">
+  <thead><tr><th>Hora</th><th>Decisión</th><th>Token</th><th>Puntaje</th><th>Motivo</th></tr></thead>
+  <tbody><tr><td colspan="5">Cargando…</td></tr></tbody>
+</table>
+
+<p class="note" id="meta"></p>
+<footer>Bot de papel — simulación con dinero falso. El rendimiento pasado no garantiza el futuro. Los datos se actualizan solo cuando el bot hace algo nuevo (filtro anti-gasto).</footer>
+
+<script>
+// URL cruda del JSON de datos (repo público trading-bot-data).
+// Funciona desde cualquier página porque raw.githubusercontent.com permite CORS.
+const DATA_URL = "https://raw.githubusercontent.com/Coque6966/trading-bot-data/main/trades.json";
+
+function fmtMoney(x) {
+  if (x === null || x === undefined) return "—";
+  const sign = x > 0 ? "+$" : x < 0 ? "-$" : "$";
+  return sign + Math.abs(x).toFixed(2);
+}
+function fmtPrice(x) {
+  if (x === null || x === undefined) return "—";
+  if (Math.abs(x) >= 1) return "$" + x.toFixed(2);
+  return "$" + x.toPrecision(4);
+}
+function esc(s) {
+  return String(s === null || s === undefined ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function card(label, value, cls) {
+  return '<div class="card"><div class="label">' + esc(label) + '</div>' +
+    '<div class="value' + (cls ? " " + cls : "") + '">' + value + "</div></div>";
+}
+
+async function load() {
+  const status = document.getElementById("status");
+  try {
+    const res = await fetch(DATA_URL + "?t=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const d = await res.json();
+    render(d);
+    status.innerHTML = '<span class="ok">● En vivo</span> — última actualización del bot: ' +
+      esc(d.ultima_actualizacion || "—");
+  } catch (e) {
+    status.innerHTML = '<span class="bad">● Sin conexión con los datos (' + esc(e.message) +
+      ')</span> — se reintenta en 30 s. Si el repo de datos aún no existe, esta página todavía no tiene de dónde leer.';
+  }
+}
+
+function render(d) {
+  const c = d.contadores || {};
+  const pnl = d.pnl_total_usd || 0;
+  document.getElementById("balance-cards").innerHTML =
+    card("Saldo actual", fmtMoney(d.saldo_actual)) +
+    card("Saldo inicial", fmtMoney(d.saldo_inicial)) +
+    card("Ganancia / pérdida", fmtMoney(pnl), pnl >= 0 ? "win" : "loss") +
+    card("Operaciones", (c.operaciones || 0) + " (" + (c.ganadas || 0) + " ganadas / " + (c.perdidas || 0) + " perdidas)");
+  document.getElementById("lane-cards").innerHTML =
+    card("Descartadas", c.descartadas || 0) +
+    card("En seguimiento", c.en_seguimiento || 0) +
+    card("Ejecutadas", c.ejecutadas || 0) +
+    card("Retenidas", c.retenidas || 0) +
+    card("Posiciones abiertas", (d.posiciones_abiertas || []).length);
+
+  const tb = document.querySelector("#trades-table tbody");
+  const ops = d.operaciones || [];
+  if (!ops.length) {
+    tb.innerHTML = '<tr><td colspan="7">Aún no hay operaciones.</td></tr>';
+  } else {
+    tb.innerHTML = ops.map(function (t) {
+      const cls = (t.pnl_usd || 0) > 0 ? "win" : (t.pnl_usd || 0) < 0 ? "loss" : "";
+      return "<tr><td>" + esc(t.cierre || "") + "</td><td><b>" + esc(t.simbolo || "") + "</b></td>" +
+        "<td>" + fmtPrice(t.entrada) + "</td><td>" + fmtPrice(t.salida) + "</td>" +
+        "<td>" + fmtMoney(t.tamano_usd) + "</td>" +
+        '<td class="' + cls + '">' + fmtMoney(t.pnl_usd) + " (" + (t.pnl_pct || 0).toFixed(2) + "%)</td>" +
+        "<td>" + esc(t.motivo_cierre || "") + "</td></tr>";
+    }).join("");
+  }
+
+  const db = document.querySelector("#decisions-table tbody");
+  const decs = d.decisiones_recientes || [];
+  if (!decs.length) {
+    db.innerHTML = '<tr><td colspan="5">Sin decisiones registradas.</td></tr>';
+  } else {
+    db.innerHTML = decs.map(function (x) {
+      const chip = x.decision === "OPEN" ? "chip-open" : x.decision === "REJECT" ? "chip-reject" : "chip-close";
+      return "<tr><td>" + esc(x.hora || "") + "</td>" +
+        '<td><span class="chip ' + chip + '">' + esc(x.decision || "") + "</span></td>" +
+        "<td><b>" + esc(x.simbolo || "") + "</b></td>" +
+        "<td>" + (x.puntaje === null || x.puntaje === undefined ? "—" : esc(x.puntaje) + "/10") + "</td>" +
+        "<td>" + esc(x.motivo || "") + "</td></tr>";
+    }).join("");
+  }
+
+  const bt = d.backtest;
+  document.getElementById("meta").textContent =
+    "Decisiones totales: " + (c.decisiones_totales || 0) +
+    " · Eventos: " + (c.eventos || 0) +
+    " · Precios observados: " + (c.precios_observados || 0) +
+    (bt ? " · Backtest 90 días: " + bt.verdict + " (" + bt.trades + " ops, " + bt.win_rate_pct + "% acierto)" : "");
+}
+
+load();
+setInterval(load, 30000);
+</script>
+</body>
+</html>
