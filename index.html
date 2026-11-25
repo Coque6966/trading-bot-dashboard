@@ -34,6 +34,7 @@ footer { color:#8a8371; font-size:13px; border-top:1px solid #d8d2c0; padding-to
 .run-line.paused .dot { background:#a8a08a; box-shadow:none; }
 .run-line.paused { color:#6b6455; }
 .run-timer { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:20px; font-weight:bold; color:#1a1a1a; }
+.learn-timer { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:13px; font-weight:bold; color:#6b6455; }
 .exec-live { color:#f97316; font-size:12px; font-weight:bold; letter-spacing:2px; }
 .exec-sub { color:#6b6455; font-size:13px; }
 .head-balance { margin-left:auto; text-align:right; }
@@ -226,6 +227,7 @@ code { background:#f0ead8; padding:1px 5px; border-radius:4px; font-size:13px; }
   <div class="head-mid">
     <div class="run-line" id="run-line"><span class="dot"></span><span id="run-state">running</span></div>
     <div class="run-timer" id="run-timer">00:00:00.00</div>
+    <div class="learn-timer" id="learn-timer">Aprendiendo 00:00:00</div>
     <div class="exec-live" id="exec-live">EXECUTOR LIVE</div>
     <div class="exec-sub">every trade gets a reason</div>
   </div>
@@ -569,8 +571,29 @@ function trunc(s, n) {
   return s.length > n ? s.slice(0, n - 1) + "…" : s;
 }
 
-// ---- Temporizador interno HH:MM:SS.cs + botón de pausa ----
-var _t0 = Date.now(), _acc = 0, _paused = false;
+// ---- Dos tiempos persistentes (orden 25 nov; bug del 00:00:00.00) ----
+// ANTES el tiempo nacía al cargar la página (var _t0 = Date.now()):
+// cada recarga volvía a 00:00:00.00. AHORA el tiempo viene de los
+// datos (trades.json -> tiempos.trabajo_segundos / aprendizaje_segundos,
+// dos acumuladores guardados en la base del bot, no en la página).
+// Reglas definitivas del usuario:
+//   - el de TRABAJO avanza solo mientras el bot trabaja (sesion.estado
+//     "activa" Y latido fresco al momento de exportar: sin latido el
+//     tablero no puede asegurar que trabaja y CONGELA el tiempo en su
+//     último valor: no avanza ni se pone en cero);
+//   - el de APRENDIZAJE avanza solo mientras corre el ciclo diario de
+//     aprendizaje; en la página se actualiza cuando llegan datos nuevos;
+//   - NINGUNO se reinicia solo: ni al recargar la página, ni al
+//     reiniciarse el servicio; solo Perchon los reinicia a propósito.
+// Entre cargas de datos (cada 30 s) el de trabajo se mueve en vivo
+// sumando el reloj desde la última carga; al recargar, manda la base
+// nueva del servidor (nunca vuelve a 00:00:00.00). El botón de pausa
+// solo pausa el refresco de datos: NUNCA congela el tiempo (eso solo
+// lo hace el estado real del bot).
+var _paused = false;
+var _tBase = { trabajo: 0, aprendizaje: 0 };  // segundos, desde los datos
+var _tBaseAt = Date.now();  // cuándo se recibió esa base
+var _tActiva = false;       // ¿el bot está trabajando ahora?
 function fmtTimer(ms) {
   function p(n) { return (n < 10 ? "0" : "") + n; }
   const cs = Math.floor(ms / 10) % 100;
@@ -579,19 +602,44 @@ function fmtTimer(ms) {
   const h = Math.floor(ms / 3600000);
   return p(h) + ":" + p(m) + ":" + p(s) + "." + p(cs);
 }
-setInterval(function () {
-  if (_paused) return;
-  const el = $("run-timer");
-  if (el) el.textContent = fmtTimer(Date.now() - _t0 + _acc);
-}, 47);
+function fmtTimerHMS(sec) {
+  sec = Math.floor(sec || 0);
+  function p(n) { return (n < 10 ? "0" : "") + n; }
+  return p(Math.floor(sec / 3600)) + ":" + p(Math.floor(sec / 60) % 60) +
+    ":" + p(sec % 60);
+}
+function botActivo(d) {
+  // ¿El bot está trabajando según los datos? El estado solo no basta:
+  // si el servicio muere sin SESSION_END (kill -9, corte de luz, VM
+  // reemplazada), el estado seguiría diciendo "activa". El latido es
+  // la verdad: debe ser fresco AL MOMENTO DE EXPORTAR (los datos se
+  // exportan cada ~30 min, así que se compara latido contra la hora
+  // de exportación, no contra ahora: un export viejo con latido
+  // pegado a su hora significa "trabajaba cuando se exportó").
+  var ses = (d && d.sesion) || null;
+  if (!ses || ses.estado !== "activa") return false;
+  var lat = ses.ultimo_latido, upd = d.ultima_actualizacion;
+  if (!lat || !upd) return true;  // datos sin latido: no congelar a ciegas
+  var latMs = Date.parse(lat), updMs = Date.parse(upd);
+  if (isNaN(latMs) || isNaN(updMs)) return true;
+  return (updMs - latMs) < 180000;
+}
+function tickTimers() {
+  var el = $("run-timer");
+  if (el) {
+    var s = _tBase.trabajo + (_tActiva ? (Date.now() - _tBaseAt) / 1000 : 0);
+    el.textContent = fmtTimer(s * 1000);
+  }
+  var le = $("learn-timer");
+  if (le) le.textContent = "Aprendiendo " + fmtTimerHMS(_tBase.aprendizaje);
+}
+setInterval(tickTimers, 47);
 var _pauseBtn = $("btn-pause");
 if (_pauseBtn) _pauseBtn.addEventListener("click", function () {
   _paused = !_paused;
-  if (_paused) { _acc += Date.now() - _t0; _pauseBtn.textContent = "▶"; }
-  else { _t0 = Date.now(); _pauseBtn.textContent = "II"; }
+  _pauseBtn.textContent = _paused ? "▶" : "II";
   const rl = $("run-line");
   if (rl) rl.className = "run-line" + (_paused ? " paused" : "");
-  setText("run-state", _paused ? "paused" : "running");
 });
 
 async function load() {
@@ -624,14 +672,23 @@ function render(d) {
   const pnl = d.pnl_total_usd || 0;
   const start = d.saldo_inicial, now = d.saldo_actual;
   const operando = abiertas.length > 0;
-  const activa = ses && ses.estado === "activa";
+  const activa = botActivo(d);
+
+  // ---- dos tiempos: la base viene de los datos; el de trabajo se
+  // mueve en vivo entre cargas solo si el bot trabaja (tickTimers) --
+  var tp = d.tiempos || {};
+  _tBase.trabajo = Number(tp.trabajo_segundos || 0);
+  _tBase.aprendizaje = Number(tp.aprendizaje_segundos || 0);
+  _tBaseAt = Date.now();
+  _tActiva = activa;
+  tickTimers();
 
   // ---- encabezado ----
   setText("k-saldo", fmtUsd(now));
   setText("c-trades", String(c.operaciones || 0));
   setText("c-wins", String(c.ganadas || 0));
   setText("c-losses", String(c.perdidas || 0));
-  setText("run-state", _paused ? "paused" : (activa ? "running" : "standby"));
+  setText("run-state", _paused ? "paused" : (activa ? "running" : (ses && ses.estado === "activa" ? "sin latido" : "standby")));
   setText("exec-live", operando ? "EXECUTOR LIVE · OPERANDO" : "EXECUTOR LIVE");
   setHtml("sub-line", "Grok Bot Brain · overnight · six agents · log first" +
     (ses && ses.id ? " · sesión <b>" + esc(ses.id) + "</b>" : " · sin sesión todavía") +

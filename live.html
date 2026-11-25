@@ -51,6 +51,9 @@
 <div class="demo">DINERO DEMO (falso) — $0 real. Ninguna operación mueve dinero de verdad.</div>
 <div class="status" id="status">Cargando datos…</div>
 
+<h2>Tiempos</h2>
+<div class="cards" id="time-cards"></div>
+
 <h2>Saldo</h2>
 <div class="cards" id="balance-cards"></div>
 
@@ -99,10 +102,48 @@ document.getElementById("unlock-form").addEventListener("submit", async function
     input.focus();
   }
 });
-if (sessionStorage.getItem("bot-unlocked") === "1") { unlock(); }
 // URL cruda del JSON de datos (repo público trading-bot-data).
 // Funciona desde cualquier página porque raw.githubusercontent.com permite CORS.
+// VA ANTES del auto-desbloqueo: si se declara después, la primera carga
+// con la sesión ya desbloqueada falla con "Cannot access 'DATA_URL'
+// before initialization" (TDZ de const) y la página queda en "Sin
+// conexión con los datos" hasta el reintento de los 30 s. (En index.html
+// ya estaba así; en live.html estaba al revés: bug latente, corregido
+// al añadir los tiempos.)
 const DATA_URL = "https://raw.githubusercontent.com/Coque6966/trading-bot-data/main/trades.json";
+if (sessionStorage.getItem("bot-unlocked") === "1") { unlock(); }
+
+// ---- Dos tiempos persistentes (orden 25 nov) ----
+// Igual que el tablero principal: el tiempo viene de los datos
+// (trades.json -> tiempos), no de la carga de la página. El de trabajo
+// avanza en vivo entre cargas solo si el bot trabaja (estado "activa"
+// y latido fresco al exportar); si no, se congela en su último valor.
+// Ninguno se reinicia solo: ni al recargar ni al reiniciar el servicio.
+var _tBase = { trabajo: 0, aprendizaje: 0 };
+var _tBaseAt = Date.now();
+var _tActiva = false;
+function fmtHMS(sec) {
+  sec = Math.floor(sec || 0);
+  function p(n) { return (n < 10 ? "0" : "") + n; }
+  return p(Math.floor(sec / 3600)) + ":" + p(Math.floor(sec / 60) % 60) +
+    ":" + p(sec % 60);
+}
+function botActivo(d) {
+  var ses = (d && d.sesion) || null;
+  if (!ses || ses.estado !== "activa") return false;
+  var lat = ses.ultimo_latido, upd = d.ultima_actualizacion;
+  if (!lat || !upd) return true;
+  var latMs = Date.parse(lat), updMs = Date.parse(upd);
+  if (isNaN(latMs) || isNaN(updMs)) return true;
+  return (updMs - latMs) < 180000;
+}
+setInterval(function () {
+  var el = document.getElementById("t-trabajo");
+  if (el) {
+    var s = _tBase.trabajo + (_tActiva ? (Date.now() - _tBaseAt) / 1000 : 0);
+    el.textContent = fmtHMS(s);
+  }
+}, 1000);
 
 function fmtMoney(x) {
   if (x === null || x === undefined) return "—";
@@ -141,6 +182,18 @@ async function load() {
 function render(d) {
   const c = d.contadores || {};
   const pnl = d.pnl_total_usd || 0;
+  // Tiempos: base desde los datos; el de trabajo tickea en vivo (arriba).
+  var tp = d.tiempos || {};
+  _tBase.trabajo = Number(tp.trabajo_segundos || 0);
+  _tBase.aprendizaje = Number(tp.aprendizaje_segundos || 0);
+  _tBaseAt = Date.now();
+  _tActiva = botActivo(d);
+  document.getElementById("time-cards").innerHTML =
+    card("Trabajando", '<span id="t-trabajo">' + fmtHMS(_tBase.trabajo) +
+      '</span>') +
+    card("Aprendiendo", fmtHMS(_tBase.aprendizaje)) +
+    card("Estado", _tActiva ? "trabajando" : "parado",
+      _tActiva ? "win" : "loss");
   document.getElementById("balance-cards").innerHTML =
     card("Saldo actual", fmtMoney(d.saldo_actual)) +
     card("Saldo inicial", fmtMoney(d.saldo_inicial)) +
