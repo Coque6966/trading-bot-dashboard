@@ -1,60 +1,160 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta http-equiv="refresh" content="30">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="refresh" content="30">
 <title>Bot de papel — Tablero</title>
 <style>
-body { background:#0b0f14; color:#d7dee8; font-family:Arial,Helvetica,sans-serif; margin:0; padding:20px; }
-h1 { color:#e8b64c; margin:0 0 4px; font-size:26px; }
-h2 { color:#7fd4a8; border-bottom:1px solid #243447; padding-bottom:4px; }
-.sub { color:#8b98a9; margin-bottom:18px; }
-.demo { background:#3a2b00; border:1px solid #e8b64c; color:#ffd97a; padding:10px 14px; border-radius:8px; margin-bottom:18px; font-weight:bold; }
-.cards { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
-.card { background:#131c28; border:1px solid #243447; border-radius:10px; padding:14px 18px; min-width:170px; }
+body { background:#05080d; color:#d7dee8; font-family:Arial,Helvetica,sans-serif; margin:0; padding:14px; }
+h1 { color:#e8b64c; margin:0; font-size:26px; letter-spacing:1px; }
+h2 { color:#7fd4a8; border-bottom:1px solid #243447; padding-bottom:4px; font-size:16px; margin:14px 0 8px; }
+.sub { color:#8b98a9; margin:4px 0 12px; }
+.demo { background:#3a2b00; border:1px solid #e8b64c; color:#ffd97a; padding:10px 14px; border-radius:8px; margin-bottom:14px; font-weight:bold; }
+.topbar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.live-dot { width:12px; height:12px; border-radius:50%; background:#4ade80; display:inline-block; box-shadow:0 0 8px #4ade80; }
+.live-label { color:#4ade80; font-weight:bold; letter-spacing:2px; font-size:13px; }
+.cards { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+.card { background:#0e1622; border:1px solid #243447; border-radius:10px; padding:12px 16px; min-width:150px; flex:1; }
 .card .label { color:#8b98a9; font-size:12px; text-transform:uppercase; }
 .card .value { font-size:26px; font-weight:bold; margin-top:4px; }
+.card .value.small { font-size:18px; }
 .win { color:#4ade80; } .loss { color:#f87171; }
-table { width:100%; border-collapse:collapse; margin-bottom:24px; font-size:14px; }
-th, td { border-bottom:1px solid #243447; padding:7px 8px; text-align:left; }
-th { color:#8b98a9; text-transform:uppercase; font-size:12px; }
+.layout { display:grid; grid-template-columns:300px 1fr 400px; gap:12px; align-items:start; }
+.panel { background:#0b1220; border:1px solid #243447; border-radius:10px; padding:12px 14px; margin-bottom:12px; }
+.panel h2 { margin-top:0; }
+.pipeline { display:flex; flex-direction:column; gap:0; }
+.agent { background:#131c28; border:1px solid #2b4a6b; border-radius:8px; padding:10px 12px; }
+.agent .name { color:#e8b64c; font-weight:bold; letter-spacing:1px; }
+.agent .desc { color:#8b98a9; font-size:13px; margin-top:2px; }
+.agent .stat { color:#d7dee8; font-size:13px; margin-top:2px; }
+.arrow { text-align:center; color:#2b4a6b; font-size:18px; line-height:1; padding:1px 0; }
+table { width:100%; border-collapse:collapse; margin-bottom:16px; font-size:13px; }
+th, td { border-bottom:1px solid #243447; padding:6px 7px; text-align:left; }
+th { color:#8b98a9; text-transform:uppercase; font-size:11px; }
 code { background:#1a2636; padding:1px 5px; border-radius:4px; }
 .note { color:#8b98a9; font-size:13px; }
 footer { color:#8b98a9; font-size:12px; border-top:1px solid #243447; padding-top:10px; }
+.mono { font-family:ui-monospace,Menlo,Consolas,monospace; }
+@media (max-width:1000px) { .layout { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
-<h1>GROK BOT BRAIN — versión papel</h1>
-<div class="sub">Bot automático de trading en simulación. Generado: 2026-11-24 23:27:33</div>
+<div class="topbar">
+  <h1>GROK BOT BRAIN — versión papel</h1>
+  <span><span class="live-dot"></span> <span class="live-label">EN VIVO</span></span>
+</div>
+<div class="sub">Bot automático de trading en simulación. Generado: 2026-11-24 23:31:59</div>
 <div class="demo">DINERO DEMO (falso) — $0 real. Ninguna operación mueve dinero de verdad.</div>
 
-<h2>Saldo en vivo (sesión demo)</h2>
 <div class="cards">
   <div class="card"><div class="label">Saldo actual</div><div class="value">$140.58</div></div>
   <div class="card"><div class="label">Saldo inicial</div><div class="value">$141.30</div></div>
-  <div class="card"><div class="label">Ganancia / pérdida en vivo</div><div class="value loss">-$+0.74</div></div>
+  <div class="card"><div class="label">Ganancia / pérdida en vivo</div><div class="value loss">-$0.74</div></div>
   <div class="card"><div class="label">Operaciones en vivo</div><div class="value">5 (1 ganadas / 4 perdidas)</div></div>
 </div>
 
-<h2>Operaciones en vivo</h2>
-<table>
-<tr><th>Cierre</th><th>Token</th><th>Motivo</th><th>Entrada</th><th>Salida</th><th>Tamaño</th><th>Ganancia/pérdida</th><th>Razón</th></tr>
-<tr><td>2026-11-25T04:40:29</td><td><b>YUMA</b></td><td>fin-de-sesion</td><td>$0.000102108</td><td>$0.0001016</td><td>$1.39</td><td class="loss">$-0.0153 (-1.10%)</td><td>fin-de-sesion</td></tr>
+<div class="layout">
+  <div>
+    <div class="panel">
+      <h2>Cuenta</h2>
+      <div class="card" style="margin-bottom:8px"><div class="label">Estrategia activa</div><div class="value small">trend_rsi</div></div>
+      <div class="card"><div class="label">Régimen del mercado</div><div class="value small">bajista</div></div>
+      <p class="note">Reglas: máximo 1% por operación · SL −8% / TP +16% (1 a 2) · máximo 3 abiertas · puntaje mínimo 7/10.</p>
+    </div>
+    <div class="panel">
+      <h2>Memoria infinita</h2>
+      <div class="card"><div class="label">Registros guardados</div><div class="value">83</div></div>
+      <p class="note">Nada se borra: cada operación, decisión y precio queda guardado para siempre y el bot aprende de su historial.</p>
+    </div>
+  </div>
+
+  <div>
+    <div class="panel">
+      <h2>Agentes</h2>
+      <div class="pipeline">
+        <div class="agent"><div class="name">SCANNER</div><div class="desc">Busca tokens nuevos con volumen y les pone puntaje 0–10.</div><div class="stat">12 tokens evaluados</div></div>
+        <div class="arrow">▼</div>
+        <div class="agent"><div class="name">RUG CHECK</div><div class="desc">Descarta lo peligroso: liquidez, holders, honeypot.</div><div class="stat">12 filtrados</div></div>
+        <div class="arrow">▼</div>
+        <div class="agent"><div class="name">SIZER</div><div class="desc">Calcula cuánto meter: máximo 1% del saldo por operación.</div><div class="stat">SL −8% / TP +16%</div></div>
+        <div class="arrow">▼</div>
+        <div class="agent"><div class="name">EXECUTOR</div><div class="desc">Ejecuta la operación simulada y vigila las posiciones cada 15 s.</div><div class="stat">5 operaciones ejecutadas</div></div>
+        <div class="arrow">▼</div>
+        <div class="agent"><div class="name">LOGGER</div><div class="desc">Registra todo con hora, precio y ganancia/pérdida.</div><div class="stat">83 registros guardados</div></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Flujo en vivo — tokens evaluados</h2>
+      <table>
+      <tr><th>Token</th><th>Estrategia</th><th>Puntaje</th><th>Veredicto</th><th>Motivo</th></tr>
+      <tr><td><b>FUCKCANCER</b></td><td>trend_rsi</td><td>3/10</td><td class="loss">FILTRADO</td><td>MERCADO-01 (25): puntaje del token &gt;= 7/10</td></tr>
+<tr><td><b>BASKET</b></td><td>trend_rsi</td><td>4/10</td><td class="loss">FILTRADO</td><td>MERCADO-01 (25): puntaje del token &gt;= 7/10</td></tr>
+<tr><td><b>YUMA</b></td><td>trend_rsi</td><td>6/10</td><td class="loss">FILTRADO</td><td>MERCADO-01 (25): puntaje del token &gt;= 7/10</td></tr>
+<tr><td><b>FUCKCANCER</b></td><td>trend_rsi</td><td>3/10</td><td class="loss">FILTRADO</td><td>MERCADO-01 (25): puntaje del token &gt;= 7/10</td></tr>
+<tr><td><b>BASKET</b></td><td>trend_rsi</td><td>4/10</td><td class="loss">FILTRADO</td><td>MERCADO-01 (25): puntaje del token &gt;= 7/10</td></tr>
+<tr><td><b>YUMA</b></td><td>trend_rsi</td><td>6/10</td><td class="loss">FILTRADO</td><td>MERCADO-01 (25): puntaje del token &gt;= 7/10</td></tr>
+<tr><td><b>FUCKCANCER</b></td><td>trend_rsi</td><td>3/10</td><td class="loss">FILTRADO</td><td>MERCADO-01 (25): puntaje del token &gt;= 7/10</td></tr>
+<tr><td><b>BASKET</b></td><td>trend_rsi</td><td>4/10</td><td class="loss">FILTRADO</td><td>MERCADO-01 (25): puntaje del token &gt;= 7/10</td></tr>
+<tr><td><b>YUMA</b></td><td>trend_rsi</td><td>6/10</td><td class="loss">FILTRADO</td><td>MERCADO-01 (25): puntaje del token &gt;= 7/10</td></tr>
+<tr><td><b>FUCKCANCER</b></td><td>trend_rsi</td><td>3/10</td><td class="loss">FILTRADO</td><td>MERCADO-01 (25): puntaje del token &gt;= 7/10</td></tr>
+<tr><td><b>BASKET</b></td><td>trend_rsi</td><td>4/10</td><td class="loss">FILTRADO</td><td>MERCADO-01 (25): puntaje del token &gt;= 7/10</td></tr>
+<tr><td><b>YUMA</b></td><td>trend_rsi</td><td>6/10</td><td class="loss">FILTRADO</td><td>MERCADO-01 (25): puntaje del token &gt;= 7/10</td></tr>
+
+      </table>
+    </div>
+  </div>
+
+  <div>
+    <div class="panel">
+      <h2>Registro en vivo — operaciones</h2>
+      <table>
+      <tr><th>Cierre</th><th>Token</th><th>Motivo</th><th>Entrada</th><th>Salida</th><th>Tamaño</th><th>Ganancia/pérdida</th></tr>
+      <tr><td>2026-11-25T04:40:29</td><td><b>YUMA</b></td><td>fin-de-sesion</td><td>$0.000102108</td><td>$0.0001016</td><td>$1.39</td><td class="loss">$-0.0153 (-1.10%)</td><td>fin-de-sesion</td></tr>
 <tr><td>2026-11-25T04:40:28</td><td><b>CHUDJAK</b></td><td>fin-de-sesion</td><td>$2.280345e-05</td><td>$2.153e-05</td><td>$1.41</td><td class="loss">$-0.0869 (-6.17%)</td><td>fin-de-sesion</td></tr>
 <tr><td>2026-11-25T04:39:46</td><td><b>TROLL</b></td><td>stop-loss</td><td>$5.948595e-05</td><td>$3.079e-05</td><td>$1.38</td><td class="loss">$-0.6720 (-48.69%)</td><td>stop-loss</td></tr>
 <tr><td>2026-11-25T04:39:46</td><td><b>YUMA</b></td><td>take-profit</td><td>$0.0001721565</td><td>$0.0002028</td><td>$1.40</td><td class="win">$+0.2400 (+17.15%)</td><td>take-profit</td></tr>
 <tr><td>2026-11-25T04:38:21</td><td><b>TROLL</b></td><td>stop-loss</td><td>$8.424915e-05</td><td>$7.232e-05</td><td>$1.38</td><td class="loss">$-0.2031 (-14.71%)</td><td>stop-loss</td></tr>
 
-</table>
+      </table>
+    </div>
+    <div class="panel">
+      <h2>Registro de eventos (últimos 21)</h2>
+      <table>
+      <tr><th>Hora</th><th>Agente</th><th>Acción</th><th>Símbolo</th><th>Motivo</th></tr>
+      <tr><td>2026-11-25T05:27:15</td><td>run_bot</td><td>SESSION_END</td><td></td><td>0 operaciones, 0 cerradas</td></tr>
+<tr><td>2026-11-25T05:12:09</td><td>run_bot</td><td>SESSION_START</td><td></td><td>sesión c55b0d26, estrategia trend_rsi, régimen bajista</td></tr>
+<tr><td>2026-11-25T05:09:28</td><td>run_bot</td><td>SESSION_END</td><td></td><td>0 operaciones, 0 cerradas</td></tr>
+<tr><td>2026-11-25T05:08:28</td><td>run_bot</td><td>SESSION_START</td><td></td><td>sesión 471125b6, estrategia trend_rsi, régimen bajista</td></tr>
+<tr><td>2026-11-25T05:06:35</td><td>run_bot</td><td>SESSION_START</td><td></td><td>sesión 9f4496e8, estrategia trend_rsi, régimen bajista</td></tr>
+<tr><td>2026-11-25T04:55:06</td><td>run_bot</td><td>SESSION_END</td><td></td><td>0 operaciones, 0 cerradas</td></tr>
+<tr><td>2026-11-25T04:53:06</td><td>run_bot</td><td>SESSION_START</td><td></td><td>sesión demo de 2 minutos</td></tr>
+<tr><td>2026-11-25T04:51:55</td><td>run_bot</td><td>SESSION_END</td><td></td><td>0 operaciones, 0 cerradas</td></tr>
+<tr><td>2026-11-25T04:49:55</td><td>run_bot</td><td>SESSION_START</td><td></td><td>sesión demo de 2 minutos</td></tr>
+<tr><td>2026-11-25T04:40:29</td><td>run_bot</td><td>SESSION_END</td><td></td><td>5 operaciones, 2 cerradas</td></tr>
+<tr><td>2026-11-25T04:40:29</td><td>executor</td><td>CLOSE</td><td>YUMA</td><td>fin-de-sesion</td></tr>
+<tr><td>2026-11-25T04:40:28</td><td>executor</td><td>CLOSE</td><td>CHUDJAK</td><td>fin-de-sesion</td></tr>
+<tr><td>2026-11-25T04:40:26</td><td>executor</td><td>OPEN</td><td>YUMA</td><td>entrada simulada (slippage +0.5%, comisión 0.3%)</td></tr>
+<tr><td>2026-11-25T04:39:46</td><td>executor</td><td>CLOSE</td><td>TROLL</td><td>stop-loss</td></tr>
+<tr><td>2026-11-25T04:39:46</td><td>executor</td><td>CLOSE</td><td>YUMA</td><td>take-profit</td></tr>
+<tr><td>2026-11-25T04:39:02</td><td>executor</td><td>OPEN</td><td>TROLL</td><td>entrada simulada (slippage +0.5%, comisión 0.3%)</td></tr>
+<tr><td>2026-11-25T04:38:21</td><td>executor</td><td>CLOSE</td><td>TROLL</td><td>stop-loss</td></tr>
+<tr><td>2026-11-25T04:38:19</td><td>executor</td><td>OPEN</td><td>TROLL</td><td>entrada simulada (slippage +0.5%, comisión 0.3%)</td></tr>
+<tr><td>2026-11-25T04:38:19</td><td>executor</td><td>OPEN</td><td>YUMA</td><td>entrada simulada (slippage +0.5%, comisión 0.3%)</td></tr>
+<tr><td>2026-11-25T04:38:19</td><td>executor</td><td>OPEN</td><td>CHUDJAK</td><td>entrada simulada (slippage +0.5%, comisión 0.3%)</td></tr>
+<tr><td>2026-11-25T04:38:04</td><td>run_bot</td><td>SESSION_START</td><td></td><td>sesión demo de 3 minutos</td></tr>
+
+      </table>
+    </div>
+  </div>
+</div>
 
 <h2>Backtest — 90 días, BTC / ETH / SOL (datos reales de CoinGecko)</h2>
 <div class="cards">
   <div class="card"><div class="label">Operaciones</div><div class="value">13</div></div>
   <div class="card"><div class="label">Ganadas / Perdidas</div><div class="value">7 / 6</div></div>
   <div class="card"><div class="label">% de acierto</div><div class="value">53.8%</div></div>
-  <div class="card"><div class="label">Ganancia / pérdida</div><div class="value win">$+0.03</div></div>
+  <div class="card"><div class="label">Ganancia / pérdida</div><div class="value win">+$0.03</div></div>
   <div class="card"><div class="label">Saldo final</div><div class="value">$141.33</div></div>
 </div>
 <h2>¿Es rentable? (métricas del backtest)</h2>
@@ -93,43 +193,7 @@ footer { color:#8b98a9; font-size:12px; border-top:1px solid #243447; padding-to
 
 </table>
 
-<h2>Memoria infinita (nada se borra)</h2>
-<div class="cards">
-  <div class="card"><div class="label">Registros guardados</div><div class="value">83</div></div>
-  <div class="card"><div class="label">Operaciones</div><div class="value">5</div></div>
-  <div class="card"><div class="label">Decisiones</div><div class="value">57</div></div>
-  <div class="card"><div class="label">Precios observados</div><div class="value">0</div></div>
-  <div class="card"><div class="label">Tamaño de la memoria</div><div class="value">64.0 KB</div></div>
-</div>
-
-<h2>Registro de eventos (últimos 21)</h2>
-<table>
-<tr><th>Hora</th><th>Agente</th><th>Acción</th><th>Símbolo</th><th>Motivo</th></tr>
-<tr><td>2026-11-25T05:27:15</td><td>run_bot</td><td>SESSION_END</td><td></td><td>0 operaciones, 0 cerradas</td></tr>
-<tr><td>2026-11-25T05:12:09</td><td>run_bot</td><td>SESSION_START</td><td></td><td>sesión c55b0d26, estrategia trend_rsi, régimen bajista</td></tr>
-<tr><td>2026-11-25T05:09:28</td><td>run_bot</td><td>SESSION_END</td><td></td><td>0 operaciones, 0 cerradas</td></tr>
-<tr><td>2026-11-25T05:08:28</td><td>run_bot</td><td>SESSION_START</td><td></td><td>sesión 471125b6, estrategia trend_rsi, régimen bajista</td></tr>
-<tr><td>2026-11-25T05:06:35</td><td>run_bot</td><td>SESSION_START</td><td></td><td>sesión 9f4496e8, estrategia trend_rsi, régimen bajista</td></tr>
-<tr><td>2026-11-25T04:55:06</td><td>run_bot</td><td>SESSION_END</td><td></td><td>0 operaciones, 0 cerradas</td></tr>
-<tr><td>2026-11-25T04:53:06</td><td>run_bot</td><td>SESSION_START</td><td></td><td>sesión demo de 2 minutos</td></tr>
-<tr><td>2026-11-25T04:51:55</td><td>run_bot</td><td>SESSION_END</td><td></td><td>0 operaciones, 0 cerradas</td></tr>
-<tr><td>2026-11-25T04:49:55</td><td>run_bot</td><td>SESSION_START</td><td></td><td>sesión demo de 2 minutos</td></tr>
-<tr><td>2026-11-25T04:40:29</td><td>run_bot</td><td>SESSION_END</td><td></td><td>5 operaciones, 2 cerradas</td></tr>
-<tr><td>2026-11-25T04:40:29</td><td>executor</td><td>CLOSE</td><td>YUMA</td><td>fin-de-sesion</td></tr>
-<tr><td>2026-11-25T04:40:28</td><td>executor</td><td>CLOSE</td><td>CHUDJAK</td><td>fin-de-sesion</td></tr>
-<tr><td>2026-11-25T04:40:26</td><td>executor</td><td>OPEN</td><td>YUMA</td><td>entrada simulada (slippage +0.5%, comisión 0.3%)</td></tr>
-<tr><td>2026-11-25T04:39:46</td><td>executor</td><td>CLOSE</td><td>TROLL</td><td>stop-loss</td></tr>
-<tr><td>2026-11-25T04:39:46</td><td>executor</td><td>CLOSE</td><td>YUMA</td><td>take-profit</td></tr>
-<tr><td>2026-11-25T04:39:02</td><td>executor</td><td>OPEN</td><td>TROLL</td><td>entrada simulada (slippage +0.5%, comisión 0.3%)</td></tr>
-<tr><td>2026-11-25T04:38:21</td><td>executor</td><td>CLOSE</td><td>TROLL</td><td>stop-loss</td></tr>
-<tr><td>2026-11-25T04:38:19</td><td>executor</td><td>OPEN</td><td>TROLL</td><td>entrada simulada (slippage +0.5%, comisión 0.3%)</td></tr>
-<tr><td>2026-11-25T04:38:19</td><td>executor</td><td>OPEN</td><td>YUMA</td><td>entrada simulada (slippage +0.5%, comisión 0.3%)</td></tr>
-<tr><td>2026-11-25T04:38:19</td><td>executor</td><td>OPEN</td><td>CHUDJAK</td><td>entrada simulada (slippage +0.5%, comisión 0.3%)</td></tr>
-<tr><td>2026-11-25T04:38:04</td><td>run_bot</td><td>SESSION_START</td><td></td><td>sesión demo de 3 minutos</td></tr>
-
-</table>
-
-<p class="note">Agentes: SCANNER busca tokens nuevos con volumen y les pone puntaje (0–10, solo se opera con 7+) · RUG CHECK descarta lo peligroso · SIZER arriesga máximo 1% por operación, con stop-loss −8% y take-profit +16% (relación 1 a 2) · EXECUTOR ejecuta la operación simulada y vigila las posiciones cada 15 s · LOGGER registra todo. Reglas: máximo 3 posiciones abiertas. Límite honesto: las APIs gratuitas actualizan cada pocos segundos, no en milisegundos.</p>
+<p class="note">Límite honesto: las APIs gratuitas actualizan cada pocos segundos, no en milisegundos.</p>
 <footer>Bot de papel — simulación con dinero falso. El rendimiento pasado no garantiza el futuro. El video que inspiró este bot es un anuncio; sus ganancias no están verificadas.</footer>
 </body>
 </html>
