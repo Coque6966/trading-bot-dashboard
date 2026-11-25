@@ -3,111 +3,210 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Bot de papel — Tablero JEV</title>
+<title>Grok Bot Brain — Tablero demo</title>
 <style>
 * { box-sizing:border-box; }
-body { background:#05080d; color:#d7dee8; font-family:Arial,Helvetica,sans-serif; margin:0; padding:16px 20px 30px; }
-h1 { color:#e8b64c; margin:0; font-size:30px; letter-spacing:1px; }
-h2 { color:#7fd4a8; border-bottom:1px solid #243447; padding-bottom:6px; font-size:20px; margin:22px 0 12px; }
-h2 .tag { color:#8b98a9; font-size:14px; font-weight:normal; }
-.sub { color:#8b98a9; margin:6px 0 12px; font-size:15px; }
-.demo { background:#3a2b00; border:1px solid #e8b64c; color:#ffd97a; padding:12px 16px; border-radius:8px; margin-bottom:16px; font-weight:bold; font-size:16px; }
-.topbar { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
-.live-dot { width:14px; height:14px; border-radius:50%; background:#4ade80; display:inline-block; box-shadow:0 0 10px #4ade80; animation:blink 1.6s ease-in-out infinite; }
-@keyframes blink { 0%,100% { opacity:1; } 50% { opacity:.35; } }
-.live-label { color:#4ade80; font-weight:bold; letter-spacing:2px; font-size:15px; }
-.status { font-size:14px; margin-bottom:10px; color:#8b98a9; }
-.status .ok { color:#4ade80; } .status .bad { color:#f87171; }
-
-/* ---- KPI grandes ---- */
-.cards { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:8px; }
-.card { background:#0e1622; border:1px solid #243447; border-radius:10px; padding:14px 18px; min-width:170px; flex:1; }
-.card .label { color:#8b98a9; font-size:13px; text-transform:uppercase; letter-spacing:1px; }
-.card .value { font-size:30px; font-weight:bold; margin-top:6px; }
-.card .value.big { font-size:46px; }
-.card .value.small { font-size:20px; }
-.card .detail { color:#8b98a9; font-size:14px; margin-top:4px; }
-.win { color:#4ade80; } .loss { color:#f87171; }
-
-/* ---- Grafo de flujo ---- */
-.flow { background:#070d16; border:1px solid #243447; border-radius:12px; padding:20px 22px 24px; margin-top:6px; }
-.flow-row { display:flex; gap:16px; align-items:stretch; justify-content:center; }
-.flow-row.q3 { display:grid; grid-template-columns:1fr 1fr 1fr; }
-.node { background:#0e1622; border:1px solid #2b4a6b; border-radius:10px; overflow:hidden; min-width:0; }
-.node .head { padding:10px 14px; font-size:18px; font-weight:bold; letter-spacing:1px; color:#fff; }
-.node .body { padding:12px 14px; font-size:15px; line-height:1.5; color:#d7dee8; }
-.node .body b { color:#fff; font-size:16px; }
-.node .body .muted { color:#8b98a9; font-size:14px; }
-.head-red { background:#7f1d1d; } .head-amber { background:#92400e; }
-.head-blue { background:#1e40af; } .head-green { background:#166534; }
-.head-orange { background:#9a3412; } .head-cyan { background:#155e75; }
-.head-violet { background:#5b21b6; }
-.node.signal { width:min(680px,100%); text-align:center; }
-.node.signal .body { font-size:16px; }
-.node.gate-node { border-color:#f59e0b; box-shadow:0 0 0 1px #f59e0b, 0 0 22px rgba(245,158,11,.25); }
-.node.lane-node { border-color:#4ade80; }
-/* cables + pulsos de luz */
-.wire-v { width:2px; height:30px; margin:0 auto; background:linear-gradient(#22d3ee,#155e75); position:relative; }
-.wire-h { flex:1; min-width:34px; height:2px; align-self:center; background:linear-gradient(90deg,#22d3ee,#155e75); position:relative; }
-.pulse { position:absolute; left:50%; width:12px; height:12px; margin-left:-6px; border-radius:50%; background:#cffafe; box-shadow:0 0 12px 3px #22d3ee; animation:pulseDown 1.8s linear infinite; }
-@keyframes pulseDown { 0% { top:-6px; opacity:0; } 15% { opacity:1; } 85% { opacity:1; } 100% { top:28px; opacity:0; } }
-.pulse-h { position:absolute; top:50%; width:12px; height:12px; margin-top:-6px; border-radius:50%; background:#cffafe; box-shadow:0 0 12px 3px #22d3ee; animation:pulseRight 1.8s linear infinite; }
-@keyframes pulseRight { 0% { left:-6px; opacity:0; } 15% { opacity:1; } 85% { opacity:1; } 100% { left:calc(100% - 6px); opacity:0; } }
-.chain { display:flex; align-items:stretch; }
-.chain .node { flex:1; }
-.legend { display:flex; gap:18px; flex-wrap:wrap; margin-top:14px; color:#8b98a9; font-size:14px; }
-.legend b { font-size:14px; }
-.dot-red { color:#f87171; } .dot-amber { color:#fbbf24; } .dot-blue { color:#60a5fa; }
-
-/* ---- Agentes dentro del grafo ---- */
-.agents-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:4px; }
-.agent .body .stat { font-size:16px; font-weight:bold; color:#fff; margin-top:6px; }
-.agent .body .sub2 { color:#8b98a9; font-size:14px; margin-top:2px; }
-.agent .state { float:right; font-size:13px; font-weight:bold; letter-spacing:1px; padding:3px 9px; border-radius:20px; background:#052e16; color:#4ade80; border:1px solid #166534; }
-.agent .state.idle { background:#3a2b00; color:#fbbf24; border-color:#92400e; }
-.agents-sub { color:#8b98a9; font-size:15px; margin:18px 0 8px; }
-.agents-sub b { color:#e8b64c; }
-
-/* ---- Carriles ---- */
-.lanes { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; margin-bottom:6px; }
-.lane { border-radius:12px; padding:16px 18px; background:#0b1220; border:2px solid #243447; }
-.lane.red { border-color:#7f1d1d; } .lane.amber { border-color:#92400e; } .lane.green { border-color:#166534; }
-.lane .lane-title { font-size:19px; font-weight:bold; letter-spacing:1px; }
-.lane.red .lane-title { color:#f87171; } .lane.amber .lane-title { color:#fbbf24; } .lane.green .lane-title { color:#4ade80; }
-.lane .count { font-size:52px; font-weight:bold; margin:6px 0 2px; }
-.lane .lane-sub { color:#8b98a9; font-size:15px; line-height:1.45; }
-.lanes-wrap { display:grid; grid-template-columns:1fr 380px; gap:14px; align-items:start; }
-.panel { background:#0b1220; border:1px solid #243447; border-radius:10px; padding:14px 16px; margin-bottom:14px; }
-.panel h2 { margin-top:0; }
-.panel h3 { color:#e8b64c; font-size:17px; margin:0 0 8px; }
-
-table { width:100%; border-collapse:collapse; margin-bottom:8px; font-size:15px; }
-th, td { border-bottom:1px solid #243447; padding:7px 8px; text-align:left; vertical-align:top; }
-th { color:#8b98a9; text-transform:uppercase; font-size:13px; letter-spacing:.5px; }
-code { background:#1a2636; padding:1px 5px; border-radius:4px; font-size:13px; }
-.note { color:#8b98a9; font-size:14px; line-height:1.5; }
-.empty { color:#8b98a9; font-size:15px; padding:10px 4px; }
-footer { color:#8b98a9; font-size:13px; border-top:1px solid #243447; padding-top:12px; margin-top:10px; }
+body { background:#f6f1e4; color:#1a1a1a; font-family:Arial,Helvetica,sans-serif; margin:0; padding:14px 18px 30px; }
+h1 { margin:0; }
+h2 { color:#1a1a1a; border-bottom:1px solid #d8d2c0; padding-bottom:6px; font-size:20px; margin:24px 0 12px; }
+h2 .tag { color:#8a8371; font-size:14px; font-weight:normal; }
+h3 { margin:0 0 10px; font-size:15px; letter-spacing:1px; color:#1a1a1a; }
+h3 .tag { color:#8a8371; font-size:12px; font-weight:normal; letter-spacing:0; }
+.sub { color:#6b6455; margin:8px 0 12px; font-size:14px; }
+.demo { background:#fff8e1; border:1px solid #e8b64c; color:#7a5b00; padding:9px 14px; border-radius:8px; margin-bottom:14px; font-weight:bold; font-size:14px; }
 .mono { font-family:ui-monospace,Menlo,Consolas,monospace; }
-.bar-label { font-size:13px; fill:#8b98a9; }
+.note { color:#6b6455; font-size:14px; line-height:1.5; }
+.empty { color:#8a8371; font-size:14px; padding:10px 4px; }
+.win { color:#15803d; } .loss { color:#dc2626; }
+footer { color:#8a8371; font-size:13px; border-top:1px solid #d8d2c0; padding-top:12px; margin-top:10px; }
+
+/* ================= ENCABEZADO GROK ================= */
+.grok-head { display:flex; align-items:center; gap:18px; flex-wrap:wrap; background:#fffdf7; border:1px solid #d8d2c0; border-radius:12px; padding:16px 20px; }
+.pause-btn { width:64px; height:64px; flex:0 0 64px; border-radius:16px; background:#111; color:#fff; border:3px solid #f97316; box-shadow:0 0 0 3px #fdba74; font-size:26px; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center; line-height:1; }
+.pause-btn:hover { background:#222; }
+.head-title { line-height:1.05; }
+.head-title .t1 { font-size:42px; font-weight:bold; color:#111; letter-spacing:-1px; }
+.head-title .t2 { font-size:42px; font-weight:bold; color:#f97316; letter-spacing:-1px; }
+.ver-tag { display:inline-block; border:1px dotted #a8a08a; border-radius:20px; padding:3px 10px; font-size:12px; color:#6b6455; margin-top:6px; }
+.head-mid { display:flex; flex-direction:column; gap:2px; }
+.run-line { font-size:14px; color:#15803d; font-weight:bold; }
+.run-line .dot { display:inline-block; width:10px; height:10px; border-radius:50%; background:#22c55e; margin-right:6px; box-shadow:0 0 6px #22c55e; }
+.run-line.paused .dot { background:#a8a08a; box-shadow:none; }
+.run-line.paused { color:#6b6455; }
+.run-timer { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:20px; font-weight:bold; color:#1a1a1a; }
+.exec-live { color:#f97316; font-size:12px; font-weight:bold; letter-spacing:2px; }
+.exec-sub { color:#6b6455; font-size:13px; }
+.head-balance { margin-left:auto; text-align:right; }
+.head-balance .bal { font-size:56px; font-weight:bold; color:#14532d; line-height:1; letter-spacing:-1px; }
+.head-balance .bal-label { color:#8a8371; font-size:14px; margin-top:2px; }
+.head-counters { display:flex; gap:16px; text-align:right; }
+.hcount .n { font-size:30px; font-weight:bold; line-height:1; }
+.hcount .l { color:#8a8371; font-size:12px; text-transform:uppercase; letter-spacing:1px; margin-top:2px; }
+.hcount .n.black { color:#111; } .hcount .n.green { color:#15803d; } .hcount .n.red { color:#dc2626; }
+
+/* ================= CUERPO: AGENTES | FLUJO ================= */
+.board { display:flex; gap:0; margin-top:14px; align-items:stretch; }
+/* línea vertical punteada (naranja, rojo, azul, verde) que une la
+   columna de agentes con el diagrama */
+.vline { flex:0 0 12px; display:flex; flex-direction:column; margin:0 8px; }
+.vline i { flex:1; border-left:3px dotted #f97316; margin-left:4px; }
+.vline i:nth-child(2) { border-left-color:#dc2626; }
+.vline i:nth-child(3) { border-left-color:#2563eb; }
+.vline i:nth-child(4) { border-left-color:#16a34a; }
+
+/* ---- Columna de agentes ---- */
+.agents-col { flex:0 0 300px; }
+.agents-col h3 { display:flex; justify-content:space-between; align-items:baseline; }
+.online { color:#15803d; font-size:13px; font-weight:bold; }
+.online .dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:#22c55e; margin-right:4px; }
+.agent-card { position:relative; background:#fff; border:1px dotted #b9b29c; border-radius:10px; padding:12px 12px 10px 52px; margin-bottom:10px; min-height:86px; }
+.agent-card .icon { position:absolute; left:12px; top:12px; width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:bold; color:#fff; }
+.agent-card .name { font-size:16px; font-weight:bold; letter-spacing:.5px; }
+.agent-card .state-tag { position:absolute; top:10px; right:10px; font-size:11px; font-weight:bold; letter-spacing:1px; color:#6b6455; border:1px dotted #a8a08a; border-radius:12px; padding:2px 8px; background:#fffdf7; }
+.agent-card .desc { color:#6b6455; font-size:13px; margin-top:2px; }
+.agent-card .d1, .agent-card .d2 { font-size:13px; margin-top:4px; line-height:1.35; }
+.agent-card .d1 b, .agent-card .d2 b { color:#1a1a1a; }
+.c-orange { color:#ea580c; } .c-red { color:#dc2626; } .c-blue { color:#2563eb; }
+.c-violet { color:#6d28d9; } .c-green { color:#15803d; }
+.bg-orange { background:#f97316; } .bg-red { background:#dc2626; } .bg-blue { background:#2563eb; }
+.bg-violet { background:#6d28d9; } .bg-green { background:#16a34a; }
+
+/* ---- Centro: flujo + paneles ---- */
+.center-col { flex:1; min-width:0; }
+.panel { background:#fff; border:1px solid #d8d2c0; border-radius:12px; padding:14px 16px; margin-bottom:14px; }
+.panel h3 { border-bottom:1px solid #eee8d5; padding-bottom:8px; }
+
+/* fichas de tokens */
+.chips { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+.chip { background:#fffdf7; border:1px dotted #b9b29c; border-radius:8px; padding:7px 11px; font-size:13px; }
+.chip b { font-size:14px; }
+.chip .cdot { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; }
+.chip .cdata { color:#6b6455; display:block; font-size:12px; margin-top:1px; }
+.chip.empty-chip { color:#8a8371; }
+
+/* diagrama de flujo */
+.flow { position:relative; display:flex; align-items:center; gap:0; margin:6px 0 4px; }
+.flow-step { flex:1; text-align:center; min-width:0; }
+.flow-step .box { background:#fffdf7; border:1px solid #d8d2c0; border-radius:9px; padding:8px 4px; font-size:12px; font-weight:bold; letter-spacing:.5px; }
+.flow-step .box.small { font-size:11px; }
+.flow-arrow { flex:0 0 34px; text-align:center; color:#a8a08a; font-size:16px; border-top:2px dotted #b9b29c; padding-top:2px; position:relative; }
+.flow-arrow .over { position:absolute; top:-16px; left:50%; transform:translateX(-50%); font-size:11px; color:#6b6455; white-space:nowrap; background:#fff; padding:0 4px; }
+.flow-circle { width:84px; height:84px; border-radius:50%; margin:0 auto; display:flex; align-items:center; justify-content:center; color:#fff; font-size:34px; font-weight:bold; }
+.flow-circle.red { background:radial-gradient(circle at 35% 30%, #f87171, #dc2626 55%, #991b1b); box-shadow:0 4px 14px rgba(220,38,38,.45); }
+.flow-circle.orange { background:radial-gradient(circle at 35% 30%, #fb923c, #f97316 55%, #c2410c); box-shadow:0 4px 14px rgba(249,115,22,.45); }
+.flow-step .cap { font-size:11px; color:#6b6455; margin-top:5px; letter-spacing:1px; font-weight:bold; }
+.flow-stamp { position:absolute; top:-6px; right:12px; transform:rotate(-8deg); border:2px solid #dc2626; color:#dc2626; font-weight:bold; font-size:13px; letter-spacing:1px; padding:3px 10px; border-radius:4px; background:rgba(255,255,255,.85); z-index:2; }
+.flow-stamp.second { top:26px; right:120px; transform:rotate(6deg); }
+.flow-lanes { display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; }
+.lane { flex:1; min-width:150px; border:1px dotted #b9b29c; border-radius:9px; padding:9px 12px; background:#fffdf7; }
+.lane .lt { font-size:12px; font-weight:bold; letter-spacing:1px; }
+.lane .ln { font-size:26px; font-weight:bold; line-height:1.1; }
+.lane.red .lt, .lane.red .ln { color:#dc2626; }
+.lane.amber .lt, .lane.amber .ln { color:#b45309; }
+.lane.green .lt, .lane.green .ln { color:#15803d; }
+.lane .ls { font-size:12px; color:#6b6455; }
+
+/* mini-tarjetas punteadas bajo el flujo */
+.minis { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+.mini-card { flex:1; min-width:150px; background:#fffdf7; border:1px dotted #b9b29c; border-radius:9px; padding:9px 12px; }
+.mini-card .mt { font-size:11px; font-weight:bold; letter-spacing:1px; color:#6b6455; }
+.mini-card .mv { font-size:15px; font-weight:bold; margin-top:3px; }
+.mini-card .ms { font-size:12px; color:#6b6455; margin-top:1px; }
+
+/* ---- Fila TRADE + RESULT ---- */
+.duo { display:flex; gap:14px; flex-wrap:wrap; }
+.duo .panel { flex:1; min-width:300px; }
+.trade-big { font-size:22px; font-weight:bold; margin:2px 0 10px; }
+.trade-big .open-chip { display:inline-block; font-size:12px; font-weight:bold; letter-spacing:1px; color:#15803d; border:1px dotted #16a34a; border-radius:12px; padding:2px 9px; vertical-align:middle; margin-left:8px; background:#f0fdf4; }
+.trade-big .none-chip { display:inline-block; font-size:12px; font-weight:bold; letter-spacing:1px; color:#6b6455; border:1px dotted #a8a08a; border-radius:12px; padding:2px 9px; vertical-align:middle; margin-left:8px; }
+.kv { display:flex; justify-content:space-between; gap:10px; padding:6px 0; border-bottom:1px solid #f0ead8; font-size:14px; }
+.kv:last-child { border-bottom:0; }
+.kv .k { color:#6b6455; }
+.kv .v { font-weight:bold; text-align:right; }
+.kv .v.mono { font-weight:normal; }
+
+/* RESULT · start vs now */
+.res-vals { display:flex; justify-content:space-between; align-items:baseline; margin:2px 0 8px; }
+.res-vals .rs { font-size:14px; color:#6b6455; }
+.res-vals .rs b { font-size:22px; color:#1a1a1a; display:block; }
+.res-vals .rn { font-size:14px; color:#6b6455; text-align:right; }
+.res-vals .rn b { font-size:26px; color:#14532d; display:block; }
+.res-bar { position:relative; height:10px; background:#e9e2cf; border-radius:6px; margin:10px 0 4px; }
+.res-bar .fill { position:absolute; left:0; top:0; bottom:0; background:#22c55e; border-radius:6px; }
+.res-bar .dot { position:absolute; top:50%; width:16px; height:16px; background:#16a34a; border:2px solid #fff; border-radius:50%; transform:translate(-50%,-50%); box-shadow:0 1px 4px rgba(0,0,0,.3); }
+.res-bar .mark { position:absolute; top:-4px; bottom:-4px; width:3px; background:#f97316; transform:translateX(-50%); }
+.res-scale { display:flex; justify-content:space-between; font-size:11px; color:#8a8371; }
+.res-wl { font-size:15px; font-weight:bold; margin-top:10px; }
+.res-wl .w { color:#15803d; } .res-wl .l { color:#dc2626; }
+.cost-table { width:100%; border-collapse:collapse; font-size:13px; margin-top:10px; }
+.cost-table td { padding:4px 0; border-bottom:1px solid #f0ead8; }
+.cost-table td:last-child { text-align:right; font-weight:bold; }
+.cost-table tr.total td { border-top:2px solid #d8d2c0; font-size:14px; }
+
+/* ---- tail -f y LOG ---- */
+.log-lines { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:13px; line-height:1.7; background:#fffdf7; border:1px dotted #b9b29c; border-radius:8px; padding:10px 12px; white-space:pre-wrap; word-break:break-word; }
+.log-lines .lt { color:#8a8371; }
+.log-lines .la-enter { color:#15803d; font-weight:bold; }
+.log-lines .la-exit { color:#166534; font-weight:bold; }
+.log-lines .la-filter { color:#dc2626; font-weight:bold; }
+.log-lines .la-skip { color:#b45309; font-weight:bold; }
+.log-lines .la-info { color:#2563eb; font-weight:bold; }
+.log-row { display:flex; gap:10px; padding:8px 0; border-bottom:1px solid #f0ead8; align-items:flex-start; }
+.log-row:last-child { border-bottom:0; }
+.log-row .ltime { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px; color:#8a8371; padding-top:2px; white-space:nowrap; }
+.log-chip { flex:0 0 auto; font-size:11px; font-weight:bold; letter-spacing:1px; border:1px dotted #a8a08a; border-radius:12px; padding:2px 9px; background:#fffdf7; }
+.log-chip.enter { color:#15803d; border-color:#16a34a; }
+.log-chip.exit { color:#166534; border-color:#16a34a; }
+.log-chip.filtered { color:#dc2626; border-color:#dc2626; }
+.log-chip.skip { color:#b45309; border-color:#d97706; }
+.log-chip.agent { color:#475569; }
+.log-row .lbody { flex:1; min-width:0; }
+.log-row .ltok { font-weight:bold; font-size:14px; }
+.log-row .lreason { color:#6b6455; font-size:13px; margin-top:1px; }
+.log-row .lamt { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:13px; font-weight:bold; white-space:nowrap; text-align:right; }
+
+/* ---- Detalle (cuenta clara, backtest...) en crema ---- */
+.cards { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:8px; }
+.card { background:#fff; border:1px solid #d8d2c0; border-radius:10px; padding:14px 18px; min-width:170px; flex:1; }
+.card .label { color:#8a8371; font-size:13px; text-transform:uppercase; letter-spacing:1px; }
+.card .value { font-size:30px; font-weight:bold; margin-top:6px; }
+.card .value.big { font-size:40px; }
+.card .value.small { font-size:20px; }
+.card .detail { color:#8a8371; font-size:14px; margin-top:4px; }
+.status { font-size:14px; margin-bottom:10px; color:#6b6455; }
+.status .ok { color:#15803d; } .status .bad { color:#dc2626; }
+table { width:100%; border-collapse:collapse; margin-bottom:8px; font-size:15px; background:#fff; }
+th, td { border-bottom:1px solid #eee8d5; padding:7px 8px; text-align:left; vertical-align:top; }
+th { color:#8a8371; text-transform:uppercase; font-size:13px; letter-spacing:.5px; }
+code { background:#f0ead8; padding:1px 5px; border-radius:4px; font-size:13px; }
 
 /* ---- Pantalla de contraseña ---- */
 #lock { min-height:80vh; display:flex; align-items:center; justify-content:center; }
-.lock-box { background:#131c28; border:1px solid #243447; border-radius:12px; padding:32px 28px; text-align:center; max-width:340px; width:100%; box-sizing:border-box; }
+.lock-box { background:#fff; border:1px solid #d8d2c0; border-radius:12px; padding:32px 28px; text-align:center; max-width:340px; width:100%; box-sizing:border-box; }
 .lock-box h1 { font-size:26px; }
-.lock-box input { width:100%; padding:12px; font-size:16px; border-radius:8px; border:1px solid #243447; background:#0b0f14; color:#d7dee8; box-sizing:border-box; margin:12px 0; }
-.lock-box button { width:100%; padding:12px; font-size:16px; font-weight:bold; border-radius:8px; border:0; background:#e8b64c; color:#111; cursor:pointer; }
-.pw-error { color:#f87171; min-height:18px; margin:8px 0 0; }
+.lock-box input { width:100%; padding:12px; font-size:16px; border-radius:8px; border:1px solid #d8d2c0; background:#fffdf7; color:#1a1a1a; box-sizing:border-box; margin:12px 0; }
+.lock-box button { width:100%; padding:12px; font-size:16px; font-weight:bold; border-radius:8px; border:0; background:#111; color:#fff; cursor:pointer; }
+.pw-error { color:#dc2626; min-height:18px; margin:8px 0 0; }
 
-@media (max-width:1000px) { .agents-grid { grid-template-columns:1fr 1fr; } .lanes { grid-template-columns:1fr; } .lanes-wrap { grid-template-columns:1fr; } .flow-row.q3 { grid-template-columns:1fr; } .chain { flex-direction:column; } .wire-h { width:2px; height:26px; margin:0 auto; flex:none; } }
-@media (max-width:640px) { .agents-grid { grid-template-columns:1fr; } h1 { font-size:24px; } .card .value.big { font-size:38px; } }
+@media (max-width:1000px) {
+  .board { flex-direction:column; }
+  .vline { flex-direction:row; flex:0 0 12px; margin:8px 0; }
+  .vline i { border-left:0; border-top:3px dotted #f97316; margin-left:0; margin-top:4px; }
+  .vline i:nth-child(2) { border-top-color:#dc2626; }
+  .vline i:nth-child(3) { border-top-color:#2563eb; }
+  .vline i:nth-child(4) { border-top-color:#16a34a; }
+  .agents-col { flex:1 1 auto; }
+  .head-balance .bal { font-size:40px; }
+  .head-title .t1, .head-title .t2 { font-size:32px; }
+  .flow-circle { width:64px; height:64px; font-size:26px; }
+}
 </style>
 </head>
 <body>
 
 <div id="lock">
   <div class="lock-box">
-    <h1>BOT DE PAPEL</h1>
+    <h1>GROK BOT BRAIN</h1>
     <p class="sub">Esta página es privada. Escribe la contraseña para entrar.</p>
     <form id="unlock-form">
       <input id="pw" type="password" placeholder="Contraseña" autocomplete="off">
@@ -117,28 +216,175 @@ footer { color:#8b98a9; font-size:13px; border-top:1px solid #243447; padding-to
   </div>
 </div>
 <div id="app" style="display:none">
-<div class="topbar">
-  <h1>GROK BOT BRAIN — versión papel</h1>
-  <span><span class="live-dot"></span> <span class="live-label" id="live-state">EN VIVO · —</span></span>
+<!-- ================= ENCABEZADO GROK ================= -->
+<div class="grok-head">
+  <button class="pause-btn" id="btn-pause" type="button" title="Pausa / reanuda el tablero">II</button>
+  <div class="head-title">
+    <span class="t1">Grok Bot</span> <span class="t2">Brain</span><br>
+    <span class="ver-tag">v1.4-night</span>
+  </div>
+  <div class="head-mid">
+    <div class="run-line" id="run-line"><span class="dot"></span><span id="run-state">running</span></div>
+    <div class="run-timer" id="run-timer">00:00:00.00</div>
+    <div class="exec-live" id="exec-live">EXECUTOR LIVE</div>
+    <div class="exec-sub">every trade gets a reason</div>
+  </div>
+  <div class="head-balance">
+    <div class="bal" id="k-saldo">—</div>
+    <div class="bal-label">balance</div>
+  </div>
+  <div class="head-counters">
+    <div class="hcount"><div class="n black" id="c-trades">—</div><div class="l">trades</div></div>
+    <div class="hcount"><div class="n green" id="c-wins">—</div><div class="l">wins</div></div>
+    <div class="hcount"><div class="n red" id="c-losses">—</div><div class="l">losses</div></div>
+  </div>
 </div>
-<div class="sub" id="sub-line">Cargando datos…</div>
+<div class="sub" id="sub-line">Grok Bot Brain · overnight · six agents · log first — cargando datos…</div>
 <div class="status" id="status">Cargando datos…</div>
-<div class="demo">DINERO DEMO (falso) — $0 real. Ninguna operación mueve dinero de verdad.</div>
+<div class="demo">DINERO DEMO (falso) — $0 real. Ninguna operación mueve dinero de verdad. El video que inspiró este tablero es una animación simulada; aquí los números son los reales del bot.</div>
 
-<div class="cards">
-  <div class="card"><div class="label">Saldo actual</div><div class="value big" id="k-saldo">—</div><div class="detail" id="k-saldo-det">—</div></div>
-  <div class="card"><div class="label">Ganancia / pérdida NETA en vivo</div><div class="value big" id="k-pnl">—</div><div class="detail" id="k-pnl-det">—</div></div>
-  <div class="card"><div class="label">Posiciones abiertas</div><div class="value" id="k-abiertas">—</div><div class="detail">máx. 3 abiertas · 1% por operación</div></div>
-  <div class="card"><div class="label">Señales evaluadas</div><div class="value" id="k-senales">—</div><div class="detail" id="k-senales-det">—</div></div>
+<div class="board">
+  <!-- ============ COLUMNA IZQUIERDA: AGENTES ============ -->
+  <div class="agents-col">
+    <h3>AGENTS <span class="online"><span class="dot"></span>6 online</span></h3>
+    <div class="agent-card">
+      <div class="icon bg-orange">&#9673;</div>
+      <div class="name c-orange">SCANNER</div>
+      <span class="state-tag" id="ag-scanner-state">SCAN</span>
+      <div class="desc">new pairs + volume spikes</div>
+      <div class="d1" id="ag-scanner-l1">—</div>
+      <div class="d2">flags only, never trades</div>
+    </div>
+    <div class="agent-card">
+      <div class="icon bg-red">&#9888;</div>
+      <div class="name c-red">RUG CHECK</div>
+      <span class="state-tag" id="ag-rug-state">PASS</span>
+      <div class="desc">filters suspicious tokens</div>
+      <div class="d1" id="ag-rug-l1">—</div>
+      <div class="d2">nothing executes before a pass</div>
+    </div>
+    <div class="agent-card">
+      <div class="icon bg-violet">&#9670;</div>
+      <div class="name c-violet">SIZER</div>
+      <span class="state-tag" id="ag-sizer-state">SIZE</span>
+      <div class="desc">sizes from account equity</div>
+      <div class="d1" id="ag-sizer-l1">—</div>
+      <div class="d2">never trades a fixed ticket</div>
+    </div>
+    <div class="agent-card">
+      <div class="icon bg-green">&#9654;</div>
+      <div class="name c-green">EXECUTOR</div>
+      <span class="state-tag" id="ag-executor-state">LIVE</span>
+      <div class="desc">opens + closes, tracks slip</div>
+      <div class="d1" id="ag-executor-l1">—</div>
+      <div class="d2">slippage cap 2.0%</div>
+    </div>
+    <div class="agent-card">
+      <div class="icon bg-orange">&#9776;</div>
+      <div class="name c-orange">LOGGER</div>
+      <span class="state-tag" id="ag-logger-state">WRITE</span>
+      <div class="desc">writes every decision</div>
+      <div class="d1" id="ag-logger-l1">—</div>
+      <div class="d2">no trade without a reason</div>
+    </div>
+    <div class="agent-card">
+      <div class="icon bg-blue">$</div>
+      <div class="name c-blue">EQUITY</div>
+      <span class="state-tag" id="ag-equity-state">IDLE</span>
+      <div class="desc">balance + curve</div>
+      <div class="d1" id="ag-equity-l1">—</div>
+      <div class="d2">updates on every close</div>
+    </div>
+  </div>
+
+  <!-- línea vertical punteada que une agentes con el diagrama -->
+  <div class="vline" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+
+  <!-- ============ CENTRO: FLUJO + PANELES ============ -->
+  <div class="center-col">
+    <div class="panel">
+      <h3>FLOW · scanner &#8594; equity <span class="tag">puerta de confianza <span id="gate-label">—</span> · 3 carriles: descartadas / en seguimiento / ejecutadas</span></h3>
+      <div class="chips" id="flow-chips"><div class="chip empty-chip">Cargando tokens…</div></div>
+      <div class="flow" id="flow-diagram">
+        <div class="flow-stamp" id="flow-stamp" style="display:none">FILTERED</div>
+        <div class="flow-stamp second" id="flow-stamp2" style="display:none">SKIPPED</div>
+        <div class="flow-step"><div class="box c-orange">SCANNER</div><div class="cap">SCAN</div></div>
+        <div class="flow-arrow">&#8594;</div>
+        <div class="flow-step"><div class="flow-circle red">&#9888;</div><div class="cap c-red">RUG CHECK</div></div>
+        <div class="flow-arrow">&#8594;</div>
+        <div class="flow-step"><div class="box c-violet">SIZER</div><div class="cap">SIZE</div></div>
+        <div class="flow-arrow">&#8594;<span class="over">pass – size – enter</span></div>
+        <div class="flow-step"><div class="flow-circle orange">&#9654;</div><div class="cap c-green">EXECUTOR</div></div>
+        <div class="flow-arrow">&#8594;</div>
+        <div class="flow-step"><div class="box c-orange">LOGGER</div><div class="cap">WRITE</div></div>
+        <div class="flow-arrow">&#8594;</div>
+        <div class="flow-step"><div class="box c-blue">EQUITY</div><div class="cap">UPDATE</div></div>
+      </div>
+      <div class="flow-lanes">
+        <div class="lane red"><div class="lt">&#10005; DESCARTADAS</div><div class="ln" id="lane-ignorar">—</div><div class="ls">ruta “ignorar” · no pasaron el filtro o la puerta</div></div>
+        <div class="lane amber"><div class="lt">&#9719; EN SEGUIMIENTO</div><div class="ln" id="lane-vigilar">—</div><div class="ls">ruta “vigilar” · retenidas para revisión humana</div></div>
+        <div class="lane green"><div class="lt">&#10003; EJECUTADAS</div><div class="ln" id="lane-operar">—</div><div class="ls">ruta “operar” · operaciones abiertas por el bot</div></div>
+      </div>
+      <div class="minis">
+        <div class="mini-card"><div class="mt">FILTERED</div><div class="mv" id="mini-filtered">—</div><div class="ms" id="mini-filtered-sub">—</div></div>
+        <div class="mini-card"><div class="mt">SIZER</div><div class="mv" id="mini-sizer">—</div><div class="ms" id="mini-sizer-sub">—</div></div>
+        <div class="mini-card"><div class="mt">LOGGER</div><div class="mv" id="mini-logger">—</div><div class="ms">each with a reason</div></div>
+        <div class="mini-card"><div class="mt">EQUITY</div><div class="mv" id="mini-equity">—</div><div class="ms" id="mini-equity-sub">—</div></div>
+      </div>
+    </div>
+
+    <div class="duo">
+      <div class="panel">
+        <h3>TRADE · ENTRY vs EXIT</h3>
+        <div class="trade-big" id="trade-big">sin operación abierta<span class="none-chip">FLAT</span></div>
+        <div class="kv"><span class="k">entry</span><span class="v mono" id="trade-entry">—</span></div>
+        <div class="kv"><span class="k">exit</span><span class="v mono" id="trade-exit">—</span></div>
+        <div class="kv"><span class="k">slip</span><span class="v mono" id="trade-slip">—</span></div>
+        <div class="kv"><span class="k">size</span><span class="v mono" id="trade-size">—</span></div>
+        <div class="kv"><span class="k">reason</span><span class="v" id="trade-reason">—</span></div>
+        <div class="kv"><span class="k">exit reason</span><span class="v" id="trade-exit-reason">—</span></div>
+      </div>
+      <div class="panel">
+        <h3>RESULT · start vs now</h3>
+        <div class="res-vals">
+          <div class="rs">START<b id="res-start">—</b></div>
+          <div class="rn">NOW<b id="res-now">—</b></div>
+        </div>
+        <div class="res-bar"><div class="fill" id="res-fill" style="width:50%"></div><div class="mark" id="res-mark" style="left:50%"></div><div class="dot" id="res-dot" style="left:50%"></div></div>
+        <div class="res-scale"><span id="res-scale-lo">−10%</span><span>start</span><span id="res-scale-hi">+10%</span></div>
+        <div class="res-wl"><span class="w" id="res-wins">0 W</span> / <span class="l" id="res-losses">0 L</span> · <span id="res-pnl">+$0.00</span></div>
+        <table class="cost-table">
+          <tr><td>Ganancia bruta</td><td id="cc-bruto">—</td></tr>
+          <tr><td>Comisiones (compra + venta)</td><td id="cc-comision">—</td></tr>
+          <tr><td>Spread</td><td id="cc-spread">—</td></tr>
+          <tr><td>Slippage</td><td id="cc-slip">—</td></tr>
+          <tr><td>Coste de red</td><td id="cc-red">—</td></tr>
+          <tr><td>Retiro (1x, USDT TRC20)</td><td id="cc-retiro">—</td></tr>
+          <tr class="total"><td>GANANCIA NETA (en vivo)</td><td id="cc-neta">—</td></tr>
+        </table>
+        <div class="note" id="cc-backtest-note">—</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>$ tail -f night.log</h3>
+      <div class="log-lines" id="night-log">Cargando registro…</div>
+    </div>
+
+    <div class="panel">
+      <h3>LOG · decisions with reasons</h3>
+      <div id="log-body"><div class="empty">Cargando decisiones…</div></div>
+    </div>
+  </div>
 </div>
 
-<!-- ============ CUENTA CLARA (costes completos, 01:20) ============ -->
+<!-- ============ DETALLE: CUENTA CLARA ============ -->
 <h2>Cuenta clara — bruto − costes = neta <span class="tag">solo si la neta es positiva la estrategia se llama rentable</span></h2>
 <div class="cards">
-  <div class="card"><div class="label">Ganancia bruta</div><div class="value" id="cc-bruto">—</div><div class="detail">antes de costes</div></div>
+  <div class="card"><div class="label">Ganancia bruta</div><div class="value" id="cc-bruto2">—</div><div class="detail">antes de costes</div></div>
   <div class="card"><div class="label">Costes de operación</div><div class="value" id="cc-costes">—</div><div class="detail" id="cc-costes-det">—</div></div>
   <div class="card"><div class="label">Neto operando (sin retiro)</div><div class="value big" id="cc-neto-op">—</div><div class="detail" id="cc-neto-op-det">—</div></div>
-  <div class="card"><div class="label">GANANCIA NETA (con 1 retiro)</div><div class="value big" id="cc-neta">—</div><div class="detail" id="cc-neta-det">—</div></div>
+  <div class="card"><div class="label">GANANCIA NETA (con 1 retiro)</div><div class="value big" id="cc-neta2">—</div><div class="detail" id="cc-neta-det">—</div></div>
 </div>
 <table>
 <tr><th>Concepto</th><th>Importe (USD)</th><th>Nota</th></tr>
@@ -147,148 +393,41 @@ footer { color:#8b98a9; font-size:13px; border-top:1px solid #243447; padding-to
 <p class="note">El PnL mostrado en este tablero es <b>NETO</b>: ganancia bruta − comisión de compra − comisión de venta − spread − slippage − coste de red − 1 retiro. Los importes son reales, del JSON de datos; con 0 operaciones en vivo todos son $0.00 y los números con desglose real están en el backtest de abajo.</p>
 <div class="status" id="cc-meta">Cargando métricas…</div>
 
-<!-- ============ MAPA DE MEMORIA (Neuromapa, adaptado) ============ -->
+<!-- ============ DETALLE: MAPA DE MEMORIA ============ -->
 <h2>Mapa de memoria — las reglas como nodos <span class="tag">lo que no se usa se olvida a la mitad cada 14 días</span></h2>
 <div class="status" id="mm-resumen">Cargando mapa…</div>
 <div class="cards" id="mm-nodos"></div>
 <div class="status" id="mm-enlaces">—</div>
 
-<!-- ============ SECCIÓN 1: GRAFO DE FLUJO ============ -->
-<h2>1 · Grafo de flujo — de la señal al carril <span class="tag">los pulsos de luz son el flujo real de decisiones</span></h2>
-<div class="flow">
-  <div class="flow-row">
-    <div class="node signal">
-      <div class="head head-cyan">SEÑAL · token nuevo detectado</div>
-      <div class="body" id="flow-senal">Cargando…</div>
-    </div>
-  </div>
-  <div class="wire-v"><span class="pulse"></span></div>
-  <div class="flow-row q3">
-    <div class="node">
-      <div class="head head-red">① RUTA — ¿qué hacemos con ella?</div>
-      <div class="body" id="q-ruta">Cargando…</div>
-    </div>
-    <div class="node">
-      <div class="head head-amber">② CONFIANZA — ¿qué tan seguro?</div>
-      <div class="body" id="q-confianza">Cargando…</div>
-    </div>
-    <div class="node">
-      <div class="head head-blue">③ EXPOSICIÓN — ¿cuánto arriesgamos?</div>
-      <div class="body" id="q-exposicion">Cargando…</div>
-    </div>
-  </div>
-  <div class="wire-v"><span class="pulse"></span></div>
-  <div class="flow-row chain">
-    <div class="node">
-      <div class="head head-violet">SCORE — reglas + red + agentes</div>
-      <div class="body" id="flow-score">Cargando…</div>
-    </div>
-    <div class="wire-h"><span class="pulse-h"></span></div>
-    <div class="node gate-node">
-      <div class="head head-amber">PUERTA <span id="gate-head">—</span></div>
-      <div class="body" id="flow-puerta">Cargando…</div>
-    </div>
-    <div class="wire-h"><span class="pulse-h"></span></div>
-    <div class="node lane-node">
-      <div class="head head-green">CARRIL — a dónde va</div>
-      <div class="body" id="flow-carril">Cargando…</div>
-    </div>
-  </div>
-  <div class="wire-v"><span class="pulse"></span></div>
-  <div class="agents-grid">
-    <div class="node agent">
-      <div class="head head-orange">SCANNER <span class="state" id="ag-scanner-state">—</span></div>
-      <div class="body">Busca tokens nuevos y les pone puntaje 0–10.<div class="stat" id="ag-scanner-stat">—</div><div class="sub2" id="ag-scanner-sub">—</div></div>
-    </div>
-    <div class="node agent">
-      <div class="head head-red">RUG CHECK <span class="state" id="ag-rug-state">—</span></div>
-      <div class="body">Descarta lo peligroso: liquidez, holders, honeypot.<div class="stat" id="ag-rug-stat">—</div><div class="sub2" id="ag-rug-sub">—</div></div>
-    </div>
-    <div class="node agent">
-      <div class="head head-blue">SIZER <span class="state" id="ag-sizer-state">—</span></div>
-      <div class="body">Calcula cuánto meter por operación.<div class="stat" id="ag-sizer-stat">—</div><div class="sub2">SL −8% / TP +16% · máx. 3 abiertas</div></div>
-    </div>
-    <div class="node agent">
-      <div class="head head-green">EXECUTOR <span class="state" id="ag-executor-state">—</span></div>
-      <div class="body">Ejecuta la operación simulada y vigila cada 15 s.<div class="stat" id="ag-executor-stat">—</div><div class="sub2" id="ag-executor-sub">—</div></div>
-    </div>
-    <div class="node agent">
-      <div class="head head-orange">LOGGER <span class="state" id="ag-logger-state">—</span></div>
-      <div class="body">Registra todo: nada se borra jamás.<div class="stat" id="ag-logger-stat">—</div><div class="sub2" id="ag-logger-sub">—</div></div>
-    </div>
-    <div class="node agent">
-      <div class="head head-blue">EQUITY <span class="state" id="ag-equity-state">—</span></div>
-      <div class="body">Saldo y PnL de la cuenta demo.<div class="stat" id="ag-equity-stat">—</div><div class="sub2" id="ag-equity-sub">—</div></div>
-    </div>
-  </div>
-  <p class="agents-sub"><b>Agentes de análisis — trabajan en paralelo</b> (cada uno puntúa la señal; el triaje los combina)</p>
-  <div class="agents-grid">
-    <div class="node agent">
-      <div class="head head-violet">VOLATILIDAD</div>
-      <div class="body">¿Se mueve con fuerza y a tiempo? Evita monedas muertas y picos ya pasados.<div class="stat" id="pa-vol-stat">—</div><div class="sub2" id="pa-vol-sub">—</div></div>
-    </div>
-    <div class="node agent">
-      <div class="head head-violet">LIQUIDEZ / HOLDERS</div>
-      <div class="body">Liquidez bloqueada/quemada y concentración de holders.<div class="stat" id="pa-holders-stat">—</div><div class="sub2" id="pa-holders-sub">—</div></div>
-    </div>
-    <div class="node agent">
-      <div class="head head-violet">VOLUMEN / FLUJO</div>
-      <div class="body">Picos de volumen y compras vs ventas.<div class="stat" id="pa-flujo-stat">—</div><div class="sub2" id="pa-flujo-sub">—</div></div>
-    </div>
-    <div class="node agent">
-      <div class="head head-violet">NOTICIAS / SENTIMIENTO</div>
-      <div class="body">Ánimo del mercado (miedo/codicia) y atención. Solo señal, nunca la única razón.<div class="stat" id="pa-sent-stat">—</div><div class="sub2" id="pa-sent-sub">—</div></div>
-    </div>
-    <div class="node agent">
-      <div class="head head-red">RIESGO</div>
-      <div class="body">Vigila el riesgo total: rachas, drawdown, tope diario. Puede bajar el tamaño o parar el bot.<div class="stat" id="pa-riesgo-stat">—</div><div class="sub2" id="pa-riesgo-sub">—</div></div>
-    </div>
-    <div class="node agent">
-      <div class="head head-violet">RED NEURONAL</div>
-      <div class="body">Aporta su puntaje, nunca decide sola. Solo se usa si pasó la validación fuera de muestra.<div class="stat" id="pa-nn-stat">—</div><div class="sub2" id="pa-nn-sub">—</div></div>
-    </div>
-  </div>
-  <div class="legend"><span><b class="dot-red">■ rojo</b> = bloquea / descarta</span><span><b class="dot-amber">■ ámbar</b> = revisa / puerta</span><span><b class="dot-blue">■ azul</b> = información / cálculo</span><span>Los pulsos de luz recorren las conexiones en el orden real del flujo.</span></div>
+<!-- ============ DETALLE: RETENIDAS / ABIERTAS / COSTO ============ -->
+<h2>Cola de retenidas y posiciones <span class="tag">detalle del grafo de arriba</span></h2>
+<div class="panel">
+  <h3>Cola de retenidas — confianza &lt; puerta (ordenada por confianza desc)</h3>
+  <table>
+  <tr><th>Símbolo</th><th>Confianza</th><th>Ruta</th><th>Puntajes</th><th>Motivo</th></tr>
+  <tbody id="held-body"><tr><td colspan="5">Cargando…</td></tr></tbody>
+  </table>
+  <p class="note">Casi pasan (puntaje 6/10, de decisions):</p>
+  <table>
+  <tr><th>Símbolo</th><th>Puntaje</th><th>Motivo</th></tr>
+  <tbody id="near-body"><tr><td colspan="3">Cargando…</td></tr></tbody>
+  </table>
+</div>
+<div class="panel">
+  <h3>Posiciones abiertas ahora</h3>
+  <table>
+  <tr><th>Símbolo</th><th>Actualizado</th></tr>
+  <tbody id="open-body"><tr><td colspan="2">Cargando…</td></tr></tbody>
+  </table>
+</div>
+<div class="panel">
+  <h3>Costo / latencia — triaje real</h3>
+  <div id="latency-panel"><div class="empty">Cargando…</div></div>
+  <p class="note">Cada barra es la latencia de una decisión de triaje reciente (ms). Costo por decisión: $0.00 — las APIs son gratuitas. Si el gráfico está vacío es porque aún no hay filas de triaje, no porque falle el tablero.</p>
 </div>
 
-<!-- ============ SECCIÓN 2: CARRILES + RETENIDAS + COSTO ============ -->
-<h2>2 · Carriles en vivo <span class="tag" id="lanes-src">fuente: tabla triage</span></h2>
-<div class="lanes">
-  <div class="lane red"><div class="lane-title">✕ DESCARTADAS</div><div class="count" id="lane-ignorar">—</div><div class="lane-sub">Ruta “ignorar” · no pasaron el filtro de puntaje o rug check.</div></div>
-  <div class="lane amber"><div class="lane-title">◷ EN SEGUIMIENTO</div><div class="count" id="lane-vigilar">—</div><div class="lane-sub">Ruta “vigilar” · en la cola de retenidas para revisión humana.</div></div>
-  <div class="lane green"><div class="lane-title">✓ EJECUTADAS</div><div class="count" id="lane-operar">—</div><div class="lane-sub">Ruta “operar” · operaciones abiertas por el bot.</div></div>
-</div>
-<div class="lanes-wrap">
-  <div>
-    <div class="panel">
-      <h3>Cola de retenidas — confianza &lt; <span id="gate-label">—</span> (ordenada por confianza desc)</h3>
-      <table>
-      <tr><th>Símbolo</th><th>Confianza</th><th>Ruta</th><th>Puntajes</th><th>Motivo</th></tr>
-      <tbody id="held-body"><tr><td colspan="5">Cargando…</td></tr></tbody>
-      </table>
-      <p class="note">Casi pasan (puntaje 6/10, de decisions):</p>
-      <table>
-      <tr><th>Símbolo</th><th>Puntaje</th><th>Motivo</th></tr>
-      <tbody id="near-body"><tr><td colspan="3">Cargando…</td></tr></tbody>
-      </table>
-    </div>
-    <div class="panel">
-      <h3>Posiciones abiertas ahora</h3>
-      <table>
-      <tr><th>Símbolo</th><th>Actualizado</th></tr>
-      <tbody id="open-body"><tr><td colspan="2">Cargando…</td></tr></tbody>
-      </table>
-    </div>
-  </div>
-  <div class="panel">
-    <h3>Costo / latencia — triaje real</h3>
-    <div id="latency-panel"><div class="empty">Cargando…</div></div>
-    <p class="note">Cada barra es la latencia de una decisión de triaje reciente (ms). Costo por decisión: $0.00 — las APIs son gratuitas. Si el gráfico está vacío es porque aún no hay filas de triaje, no porque falle el tablero.</p>
-  </div>
-</div>
-
-<!-- ============ SECCIÓN 3: OPERACIONES ============ -->
-<h2>3 · Operaciones y decisiones reales</h2>
+<!-- ============ DETALLE: OPERACIONES ============ -->
+<h2>Operaciones y decisiones reales</h2>
 <div class="panel">
   <h3 id="trades-title">Operaciones cerradas en vivo</h3>
   <table>
@@ -401,19 +540,62 @@ function fmtUsd(x) {
   if (x === null || x === undefined) return "—";
   return "$" + Number(x).toFixed(2);
 }
+function negUsd(x) {
+  if (x === null || x === undefined) return "—";
+  return (x > 0 ? "−" : "") + "$" + Math.abs(x).toFixed(2);
+}
 function fmtPrice(x) {
   if (x === null || x === undefined) return "—";
   if (Math.abs(x) >= 1) return "$" + Number(x).toFixed(2);
   return "$" + Number(x).toPrecision(4);
 }
 function shortTs(v) { return (v || "").slice(0, 19).replace("T", " "); }
+function hhmmss(v) { return (v || "").slice(11, 19) || "—"; }
 function pnlCls(x) { return (x || 0) > 0 ? "win" : (x || 0) < 0 ? "loss" : ""; }
 function num(v, dec) {
   if (v === null || v === undefined) return "—";
   return Number(v).toFixed(dec === undefined ? 2 : dec);
 }
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+function chipColor(sym) {
+  const pal = ["#f97316", "#dc2626", "#2563eb", "#16a34a", "#6d28d9", "#0891b2"];
+  let h = 0;
+  const s = String(sym || "?");
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 997;
+  return pal[h % pal.length];
+}
+function trunc(s, n) {
+  s = String(s || "");
+  return s.length > n ? s.slice(0, n - 1) + "…" : s;
+}
+
+// ---- Temporizador interno HH:MM:SS.cs + botón de pausa ----
+var _t0 = Date.now(), _acc = 0, _paused = false;
+function fmtTimer(ms) {
+  function p(n) { return (n < 10 ? "0" : "") + n; }
+  const cs = Math.floor(ms / 10) % 100;
+  const s = Math.floor(ms / 1000) % 60;
+  const m = Math.floor(ms / 60000) % 60;
+  const h = Math.floor(ms / 3600000);
+  return p(h) + ":" + p(m) + ":" + p(s) + "." + p(cs);
+}
+setInterval(function () {
+  if (_paused) return;
+  const el = $("run-timer");
+  if (el) el.textContent = fmtTimer(Date.now() - _t0 + _acc);
+}, 47);
+var _pauseBtn = $("btn-pause");
+if (_pauseBtn) _pauseBtn.addEventListener("click", function () {
+  _paused = !_paused;
+  if (_paused) { _acc += Date.now() - _t0; _pauseBtn.textContent = "▶"; }
+  else { _t0 = Date.now(); _pauseBtn.textContent = "II"; }
+  const rl = $("run-line");
+  if (rl) rl.className = "run-line" + (_paused ? " paused" : "");
+  setText("run-state", _paused ? "paused" : "running");
+});
 
 async function load() {
+  if (_paused) return;
   const status = $("status");
   try {
     const res = await fetch(DATA_URL + "?t=" + Date.now(), { cache: "no-store" });
@@ -426,6 +608,201 @@ async function load() {
     status.innerHTML = '<span class="bad">● Sin conexión con los datos (' + esc(e.message) +
       ")</span> — se reintenta en 30 s. Los números que se ven son los de la última carga, no se inventa nada.";
   }
+}
+
+function render(d) {
+  const c = d.contadores || {};
+  const tr = d.triaje || null;
+  const ag = d.agentes || {};
+  const ses = d.sesion || null;
+  const gate = tr && tr.puerta !== null && tr.puerta !== undefined ? tr.puerta : null;
+  const gateTxt = gate !== null ? gate.toFixed(2) : "—";
+  const ops = d.operaciones || [];
+  const abiertas = d.posiciones_abiertas || [];
+  const decs = d.decisiones_recientes || [];
+  const evs = d.eventos_recientes || [];
+  const pnl = d.pnl_total_usd || 0;
+  const start = d.saldo_inicial, now = d.saldo_actual;
+  const operando = abiertas.length > 0;
+  const activa = ses && ses.estado === "activa";
+
+  // ---- encabezado ----
+  setText("k-saldo", fmtUsd(now));
+  setText("c-trades", String(c.operaciones || 0));
+  setText("c-wins", String(c.ganadas || 0));
+  setText("c-losses", String(c.perdidas || 0));
+  setText("run-state", _paused ? "paused" : (activa ? "running" : "standby"));
+  setText("exec-live", operando ? "EXECUTOR LIVE · OPERANDO" : "EXECUTOR LIVE");
+  setHtml("sub-line", "Grok Bot Brain · overnight · six agents · log first" +
+    (ses && ses.id ? " · sesión <b>" + esc(ses.id) + "</b>" : " · sin sesión todavía") +
+    (ses && ses.estrategia ? " · estrategia <b>" + esc(ses.estrategia) + "</b>" : "") +
+    (ses && ses.regimen ? " · régimen <b>" + esc(ses.regimen) + "</b>" : "") +
+    " · modo <b>" + esc(d.modo || "demo") + "</b>" +
+    " · puerta <b>" + gateTxt + "</b> · se refresca cada 30 s");
+
+  // ---- carriles (fuente: triaje si existe; si no, decisions) ----
+  let nIgn = 0, nVig = 0, nOpe = 0;
+  if (tr && tr.carriles) {
+    nIgn = tr.carriles.ignorar || 0; nVig = tr.carriles.vigilar || 0; nOpe = tr.carriles.operar || 0;
+  } else {
+    nIgn = c.descartadas || 0; nVig = c.en_seguimiento || 0; nOpe = c.ejecutadas || 0;
+  }
+  setText("lane-ignorar", String(nIgn));
+  setText("lane-vigilar", String(nVig));
+  setText("lane-operar", String(nOpe));
+  setText("gate-label", gateTxt);
+
+  // ---- fichas de tokens (tokens REALES que vio el escáner/triaje) ----
+  const seen = [];
+  const chips = [];
+  function addChip(sym, detail) {
+    if (!sym || seen.indexOf(sym) >= 0) return;
+    seen.push(sym);
+    chips.push({ sym: sym, detail: detail });
+  }
+  if (tr && tr.ultima_senal && tr.ultima_senal.simbolo) {
+    addChip(tr.ultima_senal.simbolo, "conf " + num(tr.ultima_senal.confianza, 2) + " · " + (tr.ultima_senal.ruta || "—") + " · " + (tr.ultima_senal.puntaje_regla !== null && tr.ultima_senal.puntaje_regla !== undefined ? tr.ultima_senal.puntaje_regla + "/10" : "—"));
+  }
+  (tr && tr.retenidas ? tr.retenidas : []).forEach(function (t) {
+    addChip(t.simbolo, "conf " + num(t.confianza, 2) + " · " + (t.ruta || "—"));
+  });
+  decs.forEach(function (x) { addChip(x.simbolo, (x.puntaje !== null && x.puntaje !== undefined ? x.puntaje + "/10" : "") + " · " + (x.decision || "")); });
+  const top = chips.slice(0, 6);
+  setHtml("flow-chips", top.length ? top.map(function (ch) {
+    return '<div class="chip"><span class="cdot" style="background:' + chipColor(ch.sym) + '"></span><b>$' + esc(ch.sym) +
+      '</b><span class="cdata">' + esc(ch.detail) + "</span></div>";
+  }).join("") : '<div class="chip empty-chip">Sin tokens vistos todavía — el escáner aún no devolvió ninguno.</div>');
+
+  // ---- sellos FILTERED / SKIPPED (datos reales) ----
+  const st1 = $("flow-stamp"), st2 = $("flow-stamp2");
+  if (st1) {
+    if (nIgn > 0) { st1.style.display = "block"; st1.textContent = "FILTERED " + nIgn; }
+    else st1.style.display = "none";
+  }
+  if (st2) {
+    if (nVig > 0) { st2.style.display = "block"; st2.textContent = "SKIPPED " + nVig; }
+    else st2.style.display = "none";
+  }
+
+  // ---- mini-tarjetas bajo el flujo (datos reales) ----
+  setText("mini-filtered", "FILTERED " + nIgn + " / +" + nVig + " skipped");
+  setText("mini-filtered-sub", "puerta " + gateTxt + " · " + (c.decisiones_totales || 0) + " decisiones");
+  const tipSize = (now !== null && now !== undefined) ? now * 0.01 : null;
+  setText("mini-sizer", "1% eq / " + fmtUsd(tipSize) + " típico");
+  setText("mini-sizer-sub", "último tamaño: " + (ag.sizer && ag.sizer.ultimo_tamano_usd !== null && ag.sizer.ultimo_tamano_usd !== undefined ? fmtUsd(ag.sizer.ultimo_tamano_usd) : "—") + " · tope 2%");
+  setText("mini-logger", "line #" + (ag.logger ? ag.logger.registros || 0 : 0));
+  setText("mini-equity", fmtMoney(pnl) + " / last close " + (ops.length ? shortTs(ops[0].cierre || ops[0].closed_at) : "—"));
+  setText("mini-equity-sub", "saldo " + fmtUsd(now) + " · " + (c.ganadas || 0) + " W / " + (c.perdidas || 0) + " L");
+
+  // ---- 6 tarjetas de agentes (2 líneas de detalle con datos reales o "—") ----
+  const us = tr && tr.ultima_senal ? tr.ultima_senal : null;
+  const lastDec = decs.length ? decs[0] : null;
+  const lastEv = evs.length ? evs[0] : null;
+  const lastRej = decs.filter(function (x) { return (x.decision || "").toUpperCase() === "REJECT"; })[0] || null;
+  setHtml("ag-scanner-l1", us ? "último: <b>$" + esc(us.simbolo || "?") + "</b> · " + (us.puntaje_regla !== null && us.puntaje_regla !== undefined ? us.puntaje_regla + "/10" : "—") + " · conf " + num(us.confianza, 2) : "último: —");
+  setText("ag-scanner-state", "SCAN");
+  setHtml("ag-rug-l1", (c.descartadas || 0) + " filtrados" + (lastRej ? " · último: <b>$" + esc(lastRej.simbolo || "?") + "</b>" : ""));
+  setText("ag-rug-state", "PASS");
+  setHtml("ag-sizer-l1", "típico <b>" + fmtUsd(tipSize) + "</b> (1% de " + fmtUsd(now) + ") · último: " + (ag.sizer && ag.sizer.ultimo_tamano_usd !== null && ag.sizer.ultimo_tamano_usd !== undefined ? fmtUsd(ag.sizer.ultimo_tamano_usd) : "—"));
+  setText("ag-sizer-state", "SIZE");
+  setHtml("ag-executor-l1", (ag.executor ? ag.executor.ejecutadas || 0 : 0) + " ejecutadas · " + abiertas.length + " abiertas · slip cap 2.0%");
+  setText("ag-executor-state", "LIVE");
+  setHtml("ag-logger-l1", "línea <b>#" + (ag.logger ? ag.logger.registros || 0 : 0) + "</b>" + (lastEv ? " · " + hhmmss(lastEv.hora) + " " + esc(lastEv.accion || "") : ""));
+  setText("ag-logger-state", "WRITE");
+  setHtml("ag-equity-l1", "saldo <b>" + fmtUsd(now) + "</b> · " + fmtMoney(pnl) + " · último cambio: " + (ops.length ? fmtMoney(ops[0].pnl_usd) : "—"));
+  setText("ag-equity-state", operando ? "LIVE" : "IDLE");
+
+  // ---- TRADE · ENTRY vs EXIT ----
+  if (abiertas.length) {
+    const p = abiertas[0];
+    const sym = p.simbolo || p.token || "?";
+    setHtml("trade-big", "$" + esc(sym) + " LONG" + '<span class="open-chip">OPEN</span>');
+    setText("trade-entry", fmtPrice(p.entry_price !== undefined ? p.entry_price : p.entrada));
+    setText("trade-exit", fmtPrice(p.exit_price !== undefined ? p.exit_price : p.salida));
+    setText("trade-slip", p.slippage_pct !== undefined && p.slippage_pct !== null ? num(p.slippage_pct, 2) + "%" : "—");
+    setText("trade-size", fmtUsd(p.size_usd !== undefined ? p.size_usd : p.tamano_usd));
+    setText("trade-reason", p.motivo || p.razon || "—");
+    setText("trade-exit-reason", "—");
+  } else {
+    setHtml("trade-big", 'sin operación abierta<span class="none-chip">FLAT</span>');
+    ["trade-entry", "trade-exit", "trade-slip", "trade-size", "trade-reason", "trade-exit-reason"].forEach(function (id) { setText(id, "—"); });
+  }
+
+  // ---- RESULT · start vs now + costes ----
+  setText("res-start", fmtUsd(start));
+  setText("res-now", fmtUsd(now));
+  const pnlPct = (start ? (now - start) / start * 100 : 0);
+  const pos = clamp(50 + pnlPct * 5, 0, 100);
+  const fill = $("res-fill"), dot = $("res-dot"), mark = $("res-mark");
+  if (fill) fill.style.width = pos + "%";
+  if (dot) dot.style.left = pos + "%";
+  if (mark) mark.style.left = "50%";
+  setText("res-wins", (c.ganadas || 0) + " W");
+  setText("res-losses", (c.perdidas || 0) + " L");
+  const rp = $("res-pnl");
+  if (rp) { rp.textContent = fmtMoney(pnl); rp.className = pnlCls(pnl); }
+  const co = d.costes || null;
+  if (co) {
+    setText("cc-bruto", fmtMoney(co.bruto_usd || 0));
+    setText("cc-comision", negUsd(co.comision_usd || 0));
+    setText("cc-spread", negUsd(co.spread_usd || 0));
+    setText("cc-slip", negUsd(co.slippage_usd || 0));
+    setText("cc-red", negUsd(co.red_usd || 0));
+    setText("cc-retiro", negUsd(co.retiro_1x_usd || 0));
+    const neta = co.neto_final_usd !== undefined && co.neto_final_usd !== null ? co.neto_final_usd : (co.neto_operando_usd || 0) - (co.retiro_1x_usd || 0);
+    const elN = $("cc-neta");
+    if (elN) { elN.textContent = fmtMoney(neta); elN.className = pnlCls(neta); }
+  }
+  const bt = d.backtest || null;
+  if (bt) {
+    setText("cc-backtest-note", "Backtest 90 días (saldo inicial " + fmtUsd(bt.initial_balance) + "): bruta " + fmtMoney(bt.bruto_usd || 0) +
+      " · costes " + fmtUsd(bt.costes_totales_usd || 0) + " · neto operando " + fmtMoney(bt.total_pnl_usd || 0) +
+      " · − 1 retiro " + fmtUsd(bt.retiro_1_usdt_usd || 0) + " → neta " + fmtMoney(bt.neto_1_retiro_usd) + " · " + (bt.verdict || ""));
+  }
+
+  // ---- $ tail -f night.log (líneas REALES del registro) ----
+  const logLines = [];
+  evs.slice(0, 5).forEach(function (e) {
+    logLines.push({ hora: e.hora || "", cls: "la-info", act: (e.accion || "EVENT"), sym: e.simbolo || "", txt: e.motivo || "" });
+  });
+  decs.slice(0, 5).forEach(function (x) {
+    const dec = (x.decision || "").toUpperCase();
+    const cls = dec === "REJECT" ? "la-filter" : dec === "HELD" ? "la-skip" : dec === "OPEN" ? "la-enter" : dec === "CLOSE" ? "la-exit" : "la-info";
+    logLines.push({ hora: x.hora || "", cls: cls, act: dec, sym: x.simbolo || "", txt: x.motivo || "" });
+  });
+  logLines.sort(function (a, b) { return (a.hora < b.hora ? 1 : -1); });
+  const tail = logLines.slice(0, 8);
+  setHtml("night-log", tail.length ? tail.map(function (l) {
+    return '<span class="lt">' + hhmmss(l.hora) + '</span> <span class="' + l.cls + '">' + esc(l.act) + "</span>" +
+      (l.sym ? " <b>$" + esc(l.sym) + "</b>" : "") + " " + esc(trunc(l.txt, 110));
+  }).join("\n") : "sin líneas todavía — el registro está vacío.");
+
+  // ---- LOG (filas reales: hora, chip, token, reason, monto) ----
+  function logChip(dec) {
+    if (dec === "OPEN") return '<span class="log-chip enter">ENTER</span>';
+    if (dec === "CLOSE") return '<span class="log-chip exit">EXIT</span>';
+    if (dec === "REJECT") return '<span class="log-chip filtered">FILTERED</span>';
+    if (dec === "HELD") return '<span class="log-chip skip">SKIP</span>';
+    if (dec.indexOf("AGENT_") === 0) return '<span class="log-chip agent">' + esc(dec.replace("AGENT_", "")) + "</span>";
+    return '<span class="log-chip">' + esc(dec || "—") + "</span>";
+  }
+  let logRows = "";
+  ops.forEach(function (t) {
+    const p = t.pnl_usd || 0;
+    logRows += '<div class="log-row"><span class="ltime">' + hhmmss(t.cierre || t.closed_at) + "</span>" +
+      '<span class="log-chip exit">EXIT</span><div class="lbody"><div class="ltok">$' + esc(t.simbolo || "?") +
+      '</div><div class="lreason">reason: ' + esc(t.motivo_cierre || t.motivo || "—") + "</div></div>" +
+      '<span class="lamt ' + pnlCls(p) + '">' + fmtMoney(p) + "</span></div>";
+  });
+  decs.slice(0, 12).forEach(function (x) {
+    const dec = (x.decision || "").toUpperCase();
+    logRows += '<div class="log-row"><span class="ltime">' + hhmmss(x.hora) + "</span>" + logChip(dec) +
+      '<div class="lbody"><div class="ltok">$' + esc(x.simbolo || "?") + '</div><div class="lreason">reason: ' + esc(x.motivo || "—") +
+      "</div></div>" + '<span class="lamt">' + (x.puntaje !== null && x.puntaje !== undefined ? x.puntaje + "/10" : "—") + "</span></div>";
+  });
+  setHtml("log-body", logRows || '<div class="empty">Sin decisiones todavía.</div>');
+
+  renderDetail(d, c, tr, ag, ses, gateTxt, ops, abiertas, decs, evs, pnl);
 }
 
 function latencySvg(lat) {
@@ -442,64 +819,23 @@ function latencySvg(lat) {
     const x = 6 + i * (bw + gap);
     const y = h - 20 - bh;
     bars += '<rect x="' + x + '" y="' + y.toFixed(1) + '" width="' + bw + '" height="' + bh.toFixed(1) +
-      '" fill="#22d3ee"><title>' + Math.round(v) + " ms</title></rect>";
+      '" fill="#2563eb"><title>' + Math.round(v) + " ms</title></rect>";
   });
   const svg = '<svg width="100%" viewBox="0 0 ' + w + " " + h + '" preserveAspectRatio="none" style="height:110px">' +
-    bars + '<line x1="0" y1="' + (h - 20) + '" x2="' + w + '" y2="' + (h - 20) + '" stroke="#243447"/>' +
-    '<text x="6" y="' + (h - 6) + '" class="bar-label">0 ms</text>' +
-    '<text x="' + (w - 4) + '" y="14" class="bar-label" text-anchor="end">máx ' + Math.round(mx) + " ms</text></svg>";
+    bars + '<line x1="0" y1="' + (h - 20) + '" x2="' + w + '" y2="' + (h - 20) + '" stroke="#d8d2c0"/>' +
+    '<text x="6" y="' + (h - 6) + '" fill="#8a8371" font-size="11">0 ms</text>' +
+    '<text x="' + (w - 4) + '" y="14" fill="#8a8371" font-size="11" text-anchor="end">máx ' + Math.round(mx) + " ms</text></svg>";
   return svg + '<div class="note">Latencia media (últimas ' + vals.length + "): <b>" +
     Math.round(lat.promedio_ms || 0) + " ms</b> · costo acumulado (triaje): <b>$" +
     num(lat.costo_total_usd, 2) + "</b> · costo por decisión: $0.00 (API gratis)</div>";
 }
 
-function render(d) {
-  const c = d.contadores || {};
-  const tr = d.triaje || null;
-  const ag = d.agentes || {};
-  const ses = d.sesion || null;
-  const gate = tr && tr.puerta !== null && tr.puerta !== undefined ? tr.puerta : null;
-  const gateTxt = gate !== null ? gate.toFixed(2) : "—";
-  const ops = d.operaciones || [];
-  const abiertas = d.posiciones_abiertas || [];
-  const decs = d.decisiones_recientes || [];
-  const evs = d.eventos_recientes || [];
-
-  // ---- estado y línea superior ----
-  const operando = abiertas.length > 0;
-  setText("live-state", "EN VIVO · " + (operando ? "OPERANDO" : "EN ESPERA"));
-  setHtml("sub-line", "Bot automático de trading en simulación" +
-    (ses && ses.id ? " · última sesión: <b>" + esc(ses.id) + "</b>" : " · sin sesión todavía") +
-    (ses && ses.estrategia ? " · estrategia <b>" + esc(ses.estrategia) + "</b>" : "") +
-    (ses && ses.regimen ? " · régimen <b>" + esc(ses.regimen) + "</b>" : "") +
-    (ses && ses.estado ? " · sesión <b>" + esc(ses.estado) + "</b>" : "") +
-    " · modo <b>" + esc(d.modo || "demo") + "</b>" +
-    (d.enlace_exchange && d.enlace_exchange.estado && d.enlace_exchange.estado !== "sin_enlazar"
-      ? " · enlace: <b>" + esc(d.enlace_exchange.estado) + "</b>" : " · sin enlace a exchange todavía") +
-    " · se refresca cada 30 s");
-
-  // ---- KPI ----
-  const pnl = d.pnl_total_usd || 0;
-  setText("k-saldo", fmtUsd(d.saldo_actual));
-  setText("k-saldo-det", "inicial " + fmtUsd(d.saldo_inicial) +
-    " · última operación: " + (ops.length ? ops[0].simbolo : "—"));
-  const kPnl = $("k-pnl");
-  kPnl.textContent = fmtMoney(pnl);
-  kPnl.className = "value big " + pnlCls(pnl);
-  setText("k-pnl-det", (c.operaciones || 0) + " operaciones · " + (c.ganadas || 0) +
-    " ganadas / " + (c.perdidas || 0) + " perdidas · acierto " +
-    (((c.ganadas || 0) / Math.max(1, c.operaciones || 0)) * 100).toFixed(1) + "%" +
-    " · PnL NETO (bruta − comisiones − spread − slippage − red)");
-  setText("k-abiertas", abiertas.length + " / 3");
-  setText("k-senales", String(c.decisiones_totales || 0));
-  setText("k-senales-det", (ag.scanner ? ag.scanner.simbolos || 0 : 0) +
-    " símbolos distintos · última sesión: " + (ag.scanner ? ag.scanner.ultima_sesion || 0 : 0));
-
-  // ---- CUENTA CLARA (costes completos, 01:20) ----
+function renderDetail(d, c, tr, ag, ses, gateTxt, ops, abiertas, decs, evs, pnl) {
+  // ---- CUENTA CLARA (costes completos) ----
   const co = d.costes || null, me = d.metricas || null;
   if (co) {
-    setText("cc-bruto", fmtMoney(co.bruto_usd || 0));
-    setText("cc-costes", "−" + fmtUsd(co.costes_totales_usd || 0));
+    setText("cc-bruto2", fmtMoney(co.bruto_usd || 0));
+    setText("cc-costes", negUsd(co.costes_totales_usd || 0));
     setText("cc-costes-det", "comisión compra " + fmtUsd(co.comision_compra_usd || 0) + " · venta " + fmtUsd(co.comision_venta_usd || 0) +
       " (total " + fmtUsd(co.comision_usd || 0) + ") · spread " + fmtUsd(co.spread_usd || 0) +
       " · slip " + fmtUsd(co.slippage_usd || 0) + " · red " + fmtUsd(co.red_usd || 0) +
@@ -510,12 +846,11 @@ function render(d) {
     elNeto.className = "value big " + pnlCls(netoOp);
     setText("cc-neto-op-det", netoOp > 0 ? "RENTABLE en trading" : "NO rentable ni en trading");
     const neta = co.neto_final_usd !== undefined && co.neto_final_usd !== null ? co.neto_final_usd : netoOp - (co.retiro_1x_usd || 0);
-    const elNeta = $("cc-neta");
+    const elNeta = $("cc-neta2");
     elNeta.textContent = fmtMoney(neta);
     elNeta.className = "value big " + pnlCls(neta);
     setText("cc-neta-det", "− 1 retiro al final (USDT TRC20, " + fmtUsd(co.retiro_1x_usd || 0) + ") · " +
       (neta > 0 ? "RENTABLE" : "NO RENTABLE"));
-    // Desglose completo, fila por fila (números reales del JSON).
     function ccRow(concepto, importe, nota, fuerte) {
       return "<tr><td" + (fuerte ? '><b>' + esc(concepto) + "</b>" : ">" + esc(concepto)) + "</td><td" +
         (fuerte ? ' class="' + pnlCls(importe) + '"><b>' : ">") + importe +
@@ -523,19 +858,19 @@ function render(d) {
     }
     setHtml("cc-desglose-body",
       ccRow("Ganancia bruta", fmtMoney(co.bruto_usd || 0), "antes de costes", false) +
-      ccRow("Comisión de compra", "−" + fmtUsd(co.comision_compra_usd || 0), "al entrar en cada operación", false) +
-      ccRow("Comisión de venta", "−" + fmtUsd(co.comision_venta_usd || 0), "al salir de cada operación", false) +
-      ccRow("Comisión total", "−" + fmtUsd(co.comision_usd || 0), "compra + venta", false) +
-      ccRow("Spread", "−" + fmtUsd(co.spread_usd || 0), "diferencia compra/venta del mercado", false) +
-      ccRow("Slippage", "−" + fmtUsd(co.slippage_usd || 0), "medio por operación: " + fmtUsd(co.slippage_medio_usd), false) +
-      ccRow("Coste de red", "−" + fmtUsd(co.red_usd || 0), "gas / red al mover fondos", false) +
-      ccRow("Costes totales", "−" + fmtUsd(co.costes_totales_usd || 0), "suma de todos los costes", false) +
+      ccRow("Comisión de compra", negUsd(co.comision_compra_usd || 0), "al entrar en cada operación", false) +
+      ccRow("Comisión de venta", negUsd(co.comision_venta_usd || 0), "al salir de cada operación", false) +
+      ccRow("Comisión total", negUsd(co.comision_usd || 0), "compra + venta", false) +
+      ccRow("Spread", negUsd(co.spread_usd || 0), "diferencia compra/venta del mercado", false) +
+      ccRow("Slippage", negUsd(co.slippage_usd || 0), "medio por operación: " + fmtUsd(co.slippage_medio_usd), false) +
+      ccRow("Coste de red", negUsd(co.red_usd || 0), "gas / red al mover fondos", false) +
+      ccRow("Costes totales", negUsd(co.costes_totales_usd || 0), "suma de todos los costes", false) +
       ccRow("Neto operando (sin retiro)", fmtMoney(netoOp), "bruta − costes totales", true) +
-      ccRow("Retiro (1x, USDT TRC20)", "−" + fmtUsd(co.retiro_1x_usd || 0), "un solo retiro al final", false) +
+      ccRow("Retiro (1x, USDT TRC20)", negUsd(co.retiro_1x_usd || 0), "un solo retiro al final", false) +
       ccRow("GANANCIA NETA", fmtMoney(neta), "PnL NETO que muestra el tablero", true));
   } else {
-    setText("cc-bruto", "—"); setText("cc-costes", "—"); setText("cc-costes-det", "sin desglose todavía");
-    setText("cc-neto-op", "—"); setText("cc-neta", "—");
+    setText("cc-bruto2", "—"); setText("cc-costes", "—"); setText("cc-costes-det", "sin desglose todavía");
+    setText("cc-neto-op", "—"); setText("cc-neta2", "—");
     setHtml("cc-desglose-body", '<tr><td colspan="3">Sin desglose de costes todavía.</td></tr>');
   }
   if (me) {
@@ -550,11 +885,11 @@ function render(d) {
     setText("cc-meta", "Sin métricas todavía.");
   }
 
-  // ---- MAPA DE MEMORIA (Neuromapa, adaptado) ----
+  // ---- MAPA DE MEMORIA ----
   const mm = d.mapa_memoria || null;
   if (mm && mm.resumen) {
     const r = mm.resumen;
-    setText("mm-resumen", "Reglas: <b>" + (r.reglas_totales || 0) + "</b> · activas <b>" +
+    setHtml("mm-resumen", "Reglas: <b>" + (r.reglas_totales || 0) + "</b> · activas <b>" +
       (r.reglas_activas || 0) + "</b> · dormidas <b>" + (r.reglas_dormidas || 0) +
       "</b> · enlaces <b>" + (r.enlaces || 0) + "</b> · pistas dadas a los agentes: <b>" +
       (mm.pistas_dadas || 0) + "</b> (la pista no decide sola: solo evita repetir un dato viejo)");
@@ -575,119 +910,6 @@ function render(d) {
     setText("mm-resumen", "Sin mapa de memoria todavía.");
     setHtml("mm-nodos", "");
     setText("mm-enlaces", "—");
-  }
-
-  // ---- carriles (fuente: triaje si existe; si no, decisions) ----
-  let nIgn = 0, nVig = 0, nOpe = 0, laneSrc = "";
-  if (tr && tr.carriles) {
-    nIgn = tr.carriles.ignorar || 0; nVig = tr.carriles.vigilar || 0; nOpe = tr.carriles.operar || 0;
-    const nTri = (tr.retenidas ? tr.retenidas.length : 0) + nIgn + nVig + nOpe;
-    laneSrc = "fuente: tabla triage";
-    setText("lanes-src", laneSrc + (tr.latencia && tr.latencia.n ? " (" + tr.latencia.n + " filas)" : ""));
-  } else {
-    nIgn = c.descartadas || 0; nVig = c.en_seguimiento || 0; nOpe = c.ejecutadas || 0;
-    setText("lanes-src", "fuente: derivado de decisions (aún sin triaje)");
-  }
-  setText("lane-ignorar", String(nIgn));
-  setText("lane-vigilar", String(nVig));
-  setText("lane-operar", String(nOpe));
-  setText("gate-label", gateTxt);
-  setText("gate-head", gateTxt);
-
-  // ---- grafo: SEÑAL ----
-  const us = tr && tr.ultima_senal ? tr.ultima_senal : null;
-  if (us) {
-    setHtml("flow-senal", "Última señal <b>" + esc(us.simbolo || "?") + "</b> · ruta <b>" +
-      esc(us.ruta || "—") + "</b> · confianza <b>" +
-      (us.confianza !== null && us.confianza !== undefined ? num(us.confianza, 3) : "—") +
-      "</b> · regla " + (us.puntaje_regla !== null && us.puntaje_regla !== undefined ? us.puntaje_regla + "/10" : "—") +
-      " · agentes " + (us.agente_score !== null && us.agente_score !== undefined ? num(us.agente_score, 1) + "/10" : "—") +
-      "<br><span class=\"muted\">" + esc(us.hora || "") + " · Total histórico: " + (c.decisiones_totales || 0) +
-      " señales · " + (ag.scanner ? ag.scanner.simbolos || 0 : 0) + " símbolos distintos</span>");
-  } else {
-    setHtml("flow-senal", "Sin señales con triaje todavía.<br><span class=\"muted\">Total histórico: " +
-      (c.decisiones_totales || 0) + " señales · " + (ag.scanner ? ag.scanner.simbolos || 0 : 0) +
-      " símbolos distintos</span>");
-  }
-
-  // ---- grafo: 3 preguntas ----
-  setHtml("q-ruta", "ignorar <b>" + nIgn + "</b> · vigilar <b>" + nVig + "</b> · operar <b>" + nOpe +
-    "</b><br><span class=\"muted\">Fuente: " + (tr ? "tabla triage" : "decisions (aún sin triaje)") + "</span>");
-  setHtml("q-confianza", "Confianza media <b>" +
-    (tr && tr.confianza_promedio !== null && tr.confianza_promedio !== undefined ? num(tr.confianza_promedio, 3) : "—") +
-    "</b> · puerta <b>" + gateTxt + "</b><br><span class=\"muted\">Por debajo de la puerta → cola de retenidas (revisión humana)</span>");
-  const avgSize = ag.sizer ? ag.sizer.tamano_tipico_usd : null;
-  setHtml("q-exposicion", "Tamaño medio <b>" + fmtUsd(avgSize) + "</b> · 1% del saldo (tope 2%)" +
-    "<br><span class=\"muted\">Pérdida máx. por operación ≈ " + fmtUsd(avgSize ? avgSize * 0.08 : null) +
-    " (SL −8%) · TP +16%</span>");
-
-  // ---- grafo: SCORE -> PUERTA -> CARRIL ----
-  const lastOk = ag.ultimo_puntaje_aprobado || null;
-  setHtml("flow-score", "Último puntaje aprobado <b>" +
-    (lastOk ? lastOk.puntaje + "/10 · " + esc(lastOk.simbolo || "") : "—") +
-    "</b><br><span class=\"muted\">Mínimo para operar: 7/10 (o 6/10 con red ≥ 7)</span>");
-  setHtml("flow-puerta", "<b>" + nOpe + " pasan</b> · " + (nIgn + nVig) + " no pasan" +
-    "<br><span class=\"muted\">Solo ≥ " + gateTxt + " se opera automático</span>");
-  setHtml("flow-carril", "Descartadas <b>" + nIgn + "</b> · En seguimiento <b>" + nVig +
-    "</b> · Ejecutadas <b>" + nOpe + "</b><br><span class=\"muted\">Detalle abajo, en la sección 2</span>");
-
-  // ---- 6 agentes ----
-  const activa = ses && ses.estado === "activa";
-  const stTxt = activa ? "ACTIVO" : "EN PAUSA";
-  const stCls = activa ? "" : "idle";
-  ["scanner", "rug", "sizer", "executor", "logger"].forEach(function (k) {
-    const el = $("ag-" + k + "-state");
-    if (el) { el.textContent = stTxt; el.className = "state " + stCls; }
-  });
-  const eqState = $("ag-equity-state");
-  if (eqState) { eqState.textContent = operando ? "OPERANDO" : "EN ESPERA"; eqState.className = "state" + (operando ? "" : " idle"); }
-  setText("ag-scanner-stat", (c.decisiones_totales || 0) + " tokens evaluados");
-  setText("ag-scanner-sub", (ag.scanner ? ag.scanner.simbolos || 0 : 0) + " símbolos distintos · última sesión: " + (ag.scanner ? ag.scanner.ultima_sesion || 0 : 0));
-  setText("ag-rug-stat", (c.descartadas || 0) + " filtrados");
-  setText("ag-rug-sub", "decisions REJECT registradas · sin honeypot detectable con API gratis");
-  setText("ag-sizer-stat", "tamaño típico " + fmtUsd(avgSize) + " (1%)");
-  setText("ag-executor-stat", (ag.executor ? ag.executor.ejecutadas || 0 : 0) + " operaciones ejecutadas");
-  setText("ag-executor-sub", (ag.executor ? ag.executor.opens || 0 : 0) + " OPEN + " + (ag.executor ? ag.executor.closes || 0 : 0) +
-    " CLOSE en eventos · " + abiertas.length + " abiertas ahora");
-  setText("ag-logger-stat", (ag.logger ? ag.logger.registros || 0 : 0) + " registros guardados");
-  setText("ag-logger-sub", ops.length + " trades · " + (c.decisiones_totales || 0) + " decisions · " + (c.eventos || 0) + " eventos");
-  const eqStat = $("ag-equity-stat");
-  eqStat.textContent = fmtUsd(d.saldo_actual) + " · " + fmtMoney(pnl);
-  eqStat.className = "stat " + pnlCls(pnl);
-  setText("ag-equity-sub", (c.ganadas || 0) + " ganadas / " + (c.perdidas || 0) + " perdidas · acierto " +
-    (((c.ganadas || 0) / Math.max(1, c.operaciones || 0)) * 100).toFixed(1) + "%");
-
-  // ---- 5 agentes de análisis en paralelo + red neuronal ----
-  // (el id del HTML usa la forma corta: vol / sent)
-  function paStat(key, idSuffix) {
-    const a = ag[key] || {};
-    if (a.ultimo_puntaje === null || a.ultimo_puntaje === undefined) {
-      setText("pa-" + idSuffix + "-stat", "sin datos todavía");
-      setText("pa-" + idSuffix + "-sub", "Ninguna señal evaluada aún con este agente.");
-      return;
-    }
-    setText("pa-" + idSuffix + "-stat", num(a.ultimo_puntaje, 1) + "/10 · " + (a.simbolo || "?"));
-    setText("pa-" + idSuffix + "-sub", a.motivo || "");
-  }
-  paStat("volatilidad", "vol");
-  paStat("holders", "holders");
-  paStat("flujo", "flujo");
-  paStat("sentimiento", "sent");
-  const rk = ag.riesgo || {};
-  if (rk.ultimo_puntaje === null || rk.ultimo_puntaje === undefined) {
-    setText("pa-riesgo-stat", "sin datos todavía");
-    setText("pa-riesgo-sub", "Ninguna señal evaluada aún con este agente.");
-  } else {
-    const factor = (rk.ultimo_puntaje / 10).toFixed(1);
-    setText("pa-riesgo-stat", "factor ×" + factor + " · " + (rk.simbolo || "?"));
-    setText("pa-riesgo-sub", rk.motivo || "");
-  }
-  if (us && us.nn_score !== null && us.nn_score !== undefined) {
-    setText("pa-nn-stat", num(us.nn_score, 1) + "/10 · " + (us.simbolo || "?"));
-    setText("pa-nn-sub", "Última señal con red neuronal.");
-  } else {
-    setText("pa-nn-stat", "sin modelo útil");
-    setText("pa-nn-sub", "El bot opera solo con reglas (ningún modelo pasó la validación).");
   }
 
   // ---- cola de retenidas ----
@@ -773,7 +995,6 @@ function render(d) {
     setText("bt-rr", "1 a " + num(bt.rr_achieved, 2));
     setText("bt-dd", fmtUsd(bt.max_drawdown_usd) + " (" + num(bt.max_drawdown_pct, 2) + "%)");
     setText("bt-verdict", bt.verdict || "—");
-    // Costes del backtest, con números reales del JSON (aquí sí hay operaciones).
     const btNeta = (bt.neto_1_retiro_usd !== undefined && bt.neto_1_retiro_usd !== null) ? bt.neto_1_retiro_usd : (bt.total_pnl_usd || 0) - (bt.retiro_1_usdt_usd || 0);
     setHtml("bt-costes", "Costes del backtest (90 días): bruta <b>" + fmtMoney(bt.bruto_usd || 0) +
       "</b> · comisión compra <b>" + fmtUsd(bt.comision_compra_usd || 0) + "</b> · comisión venta <b>" +
